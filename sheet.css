@@ -1,0 +1,57 @@
+body {
+    background-color: black;
+    margin: 0;
+    color: whitesmoke;
+    font-size: 20px;
+}
+img{
+    height: 100%;
+    margin: 0;
+}
+.nav-control{
+    height: 30px;
+    width: 90%;
+    margin: auto;
+    margin-top: 30px;
+    margin-bottom: 10px;
+    display: flex;
+}
+.control-button{
+    height: 100%;
+}
+.logo{
+    height: 100%;
+    margin: auto;
+}
+.main{
+    margin-top: 20px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.post{
+    margin-top: 50px;
+}
+.post_user_icon img{
+    height: 100%;
+    border-radius:50%;
+    margin-right: 1%;
+}
+.post_user{
+    display: flex;
+    font-size: 1.5rem;
+    color: white;
+    margin: 0;
+    height: 30px;
+    margin:1%
+}
+.post_user a{
+    color: aliceblue;
+    text-decoration:none;
+}
+.post_photo img{
+    width: 100%;
+}
+.post_captions{
+    line-height: 0px;
+}
