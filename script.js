@@ -1,6 +1,6 @@
 function load() {
   // GET リクエスト
-  fetch('https://script.google.com/macros/s/AKfycbxwng0qKwz4t34FqoygL5kP0LKcLy2fjlOFXWVQpNT8h23AEOFWxf7EQNtwFzJ3CnvZcA/exec')
+  fetch('https://script.google.com/macros/s/AKfycbw5nblZ0Rzi2CKgFiS2SBRPl4THDYA9y4iYOj0kz_LDndcAcG5XlesUzwAJAIG7qGyuOg/exec')
   .then(response => response.json())
   .then(data => {
     let main = document.getElementById('main');
@@ -34,35 +34,35 @@ function load() {
   });
 }
 
-function upload() {
-    event.preventDefault(); // フォームのデフォルト送信を防止
+function upload(event) {
+  event.preventDefault(); // フォームのデフォルト送信を防止
 
-    // フォームデータを取得
-    const formData = {
-      username: document.getElementById('username').value,
-      title: document.getElementById('title').value,
-      caption: document.getElementById('caption').value,
-      image: document.getElementById('image').value,
-      likes: parseInt(document.getElementById('likes').value),
-      post_id: document.getElementById('post_id').value,
-      user_icon: document.getElementById('user_icon').value
-    };
-
-    // POST リクエストを作成
-    fetch('YOUR_GOOGLE_APPS_SCRIPT_POST_URL', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(formData)
-    })
-    .then(response => response.json())
-    .then(data => {
-      // サーバーからのレスポンスメッセージを表示
-      document.getElementById('responseMessage').innerText = data.message;
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      document.getElementById('responseMessage').innerText = 'Error: Failed to post data.';
-    });
+  // フォームデータを取得
+  const formData = {
+    title: document.getElementById('title').value,
+    caption: document.getElementById('caption').value,
+    image: document.getElementById('image').value
   };
+
+  // POST リクエストを作成
+  fetch('https://script.google.com/macros/s/AKfycbw5nblZ0Rzi2CKgFiS2SBRPl4THDYA9y4iYOj0kz_LDndcAcG5XlesUzwAJAIG7qGyuOg/exec', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(formData)
+  })
+  .then(response => response.json())
+  .then(data => {
+    // サーバーからのレスポンスメッセージを表示
+    document.getElementById('responseMessage').innerText = data.message;
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    document.getElementById('responseMessage').innerText = 'Error: Failed to post data.';
+  });
+}
+
+// フォームの送信イベントを監視
+document.getElementById('postForm').addEventListener('submit', upload);
+
