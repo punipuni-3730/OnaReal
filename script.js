@@ -1,6 +1,16 @@
+const GoogleAppScriptURL = 'https://script.google.com/macros/s/AKfycbzz_B9syhbtkzrSlbXMCMC3q3DUjr4anEXt2-_FlpNXyp6Mc2bPXIG05Jn8uhaoECUVfw/exec';
+
+document.addEventListener('DOMContentLoaded', function() {
+  const usr = localStorage.getItem('username');
+  if(localStorage.getItem('state') !== '1'){
+    window.location.href = 'setuser.html';
+  }
+  main.insertAdjacentHTML('afterbegin', `Welcome, ${usr}!`);
+});
+
 function load() {
   // GET リクエスト
-  fetch('https://script.google.com/macros/s/AKfycbw5nblZ0Rzi2CKgFiS2SBRPl4THDYA9y4iYOj0kz_LDndcAcG5XlesUzwAJAIG7qGyuOg/exec')
+  fetch(GoogleAppScriptURL)
   .then(response => response.json())
   .then(data => {
     let main = document.getElementById('main');
@@ -39,14 +49,17 @@ function upload(event) {
 
   // フォームデータを取得
   const formData = {
+    username: localStorage.getItem('username'),
+    usericon: localStorage.getItem('usericon'),
     title: document.getElementById('title').value,
     caption: document.getElementById('caption').value,
     image: document.getElementById('image').value
   };
 
   // POST リクエストを作成
-  fetch('https://script.google.com/macros/s/AKfycbw5nblZ0Rzi2CKgFiS2SBRPl4THDYA9y4iYOj0kz_LDndcAcG5XlesUzwAJAIG7qGyuOg/exec', {
+  fetch(GoogleAppScriptURL, {
     method: 'POST',
+    mode: 'no-cors',
     headers: {
       'Content-Type': 'application/json'
     },
