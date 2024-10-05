@@ -23,6 +23,22 @@ img{
     height: 100%;
     margin: auto;
 }
+.sortbar {
+    margin-top: 20px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+#sortselect {
+    background-color: black;
+    color: white;
+    border: solid white 1px;
+    font-size: 20px;
+    padding: 5px;
+    width: 100%;
+    text-align: center;
+    border-radius: 999px;
+}
 .main{
     margin-top: 20px;
     max-width: 700px;

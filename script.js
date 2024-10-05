@@ -16,6 +16,22 @@ function load() {
     let main = document.getElementById('main');
     main.innerHTML = ""; // 既存のコンテンツをクリア
 
+    // ソート順を取得
+    sort = document.getElementById('sortselect').value;
+
+    switch (sort) {
+      case 'newest':
+        // 新しい順: 逆向きに
+        data.reverse();
+        break;
+      case 'oldest':
+        break;
+      case 'popular':
+        // 人気な方を上に
+        data.sort((a, b) => parseInt(b).likes - parseInt(a).likes);
+        break;
+    }
+
     for (var i = 0; i < data.length; i++) {
       main.insertAdjacentHTML('beforeend', `
         <div class="post" id="post">
