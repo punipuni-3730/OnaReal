@@ -18,7 +18,6 @@ function load() {
 
     // ソート順を取得
     sort = document.getElementById('sortselect').value;
-
     switch (sort) {
       case 'newest':
         // 新しい順: 逆向きに
@@ -28,19 +27,19 @@ function load() {
         break;
       case 'popular':
         // 人気な方を上に
-        data.sort((a, b) => parseInt(b).likes - parseInt(a).likes);
+      data.sort((a, b) => parseInt(b).likes - parseInt(a).likes);
         break;
     }
-
+    
     for (var i = 0; i < data.length; i++) {
       main.insertAdjacentHTML('beforeend', `
         <div class="post" id="post">
           <div class="post_user">
             <div class="post_user_icon">
               <a href="${data[i].username}"><img src="${data[i].user_icon}" referrerpolicy="no-referrer" id="usericon"></a>
-            </div>
+            </div>          
             <div class="post_user_name">
-              <a href="/">${data[i].username}</a>
+              <a>${data[i].username}</a>
             </div>
           </div>
           <div class="post_photo">

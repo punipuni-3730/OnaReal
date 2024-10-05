@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="apple-touch-icon" type="image/png" href="images/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="images/icon-192x192.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <link href="sheet.css" rel="stylesheet">
     <script src="script.js"></script>
     <title>Ona Real. Web App</title>
@@ -20,12 +24,11 @@
                 <a href="upload.html"><img src="images/dummy.png"></a>
             </div>
         </div>
-        <div>
-            <div class="sortbar">
-                <select id="sortselect">
-                    <option value="newest" selected>新しい順</option>
-                    <option value="oldest">古い順</option>
-                    <option value="popular">人気順</option>
+        <div class="sortbar">
+            <select id="sortselect">
+                <option value="newest" selected>新しい順</option>
+                   <option value="oldest">古い順</option>
+                   <option value="popular">人気順</option>
                 </select>
             </div>
             <div class="main" id="main">
@@ -33,7 +36,6 @@
             </div>
         </div>
     </div>
-
     <script src="index.js" async defer></script>
 </body>
 </html>
