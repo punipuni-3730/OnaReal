@@ -13,34 +13,39 @@
     <div class="display">
         <div class="nav-control">
             <div class="control-button">
-                <a href=""><img src="images/left.png"></a>
+                <a href="index.html"><img src="images/left.png"></a>
             </div>
             <div class="logo">
                 <a href="index.html"><img src="images/logo.png"></a>
             </div>
             <div class="control-button">
-                <img src="images/black.png">
+                <a href="javascript:void(0)"><img src="images/black.png"></a>
             </div>
         </div>
         <div class="main" id="main">
-            <form id="postForm">
-                <label for="title">Title:</label>
-                <input type="text" id="title" name="title" required><br><br>
-            
-                <label for="caption">Caption:</label>
-                <input type="text" id="caption" name="caption"><br><br>
-            
-                <label for="image">Image URL:</label>
-                <input type="text" id="image" name="image"><br><br>
-            
-                <button type="submit">Submit</button>
-              </form>
-            
-              <div id="responseMessage"></div>
+            <form id="upload-form">
+                <!-- 隠されたファイル入力 -->
+                <input type="file" id="image-upload" accept="image/*" />
+                
+                <!-- カスタムボタン -->
+                <label for="image-upload" class="custom-upload-button">Upload Image</label>
+                <button type="button" id="upload-button"style="visibility: hidden";>Submit</button>
+            </form>
+            <div id="preview-container">
+                <img id="preview">
             </div>
+            <form id="postForm" class="postform">
+                <input type="text" id="image" name="image" required><br><br>
+
+                <label for="caption" class="postblocklabel">Caption:</label>
+                <input type="text" id="caption" name="caption" required><br><br>
+            
+                <button type="submit">Post</button>
+            </form>
+            
+            <div id="responseMessage">upload imageを押す<br>画像URL表示されてからPostしてください</div>
         </div>
     </div>
 </body>
-<script src="script.js"></script>
-
+<script src="upload.js"></script>
 </html>

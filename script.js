@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if(localStorage.getItem('state') !== '1'){
     window.location.href = 'setuser.html';
   }
-  main.insertAdjacentHTML('afterbegin', `Welcome, ${usr}!`);
+  document.getElementById("main").insertAdjacentHTML('afterbegin', `Welcome, ${usr}!`);
 });
 
 function load() {
@@ -18,25 +18,35 @@ function load() {
 
     // ソート順を取得
     sort = document.getElementById('sortselect').value;
+
     switch (sort) {
       case 'newest':
         // 新しい順: 逆向きに
         data.reverse();
         break;
       case 'oldest':
+        // 何もしない（元の順番）
         break;
       case 'popular':
         // 人気な方を上に
-      data.sort((a, b) => parseInt(b).likes - parseInt(a).likes);
+        data.sort((a, b) => parseInt(b.likes) - parseInt(a.likes));
+        break;
+      case 'random':
+        // ランダム順に並べ替え
+        for (let i = data.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [data[i], data[j]] = [data[j], data[i]]; // 要素を交換
+        }
         break;
     }
+    
     
     for (var i = 0; i < data.length; i++) {
       main.insertAdjacentHTML('beforeend', `
         <div class="post" id="post">
           <div class="post_user">
             <div class="post_user_icon">
-              <a href="${data[i].username}"><img src="${data[i].user_icon}" referrerpolicy="no-referrer" id="usericon"></a>
+              <a href=""><img src="${data[i].user_icon}" referrerpolicy="no-referrer" id="usericon"></a>
             </div>          
             <div class="post_user_name">
               <a>${data[i].username}</a>
@@ -58,39 +68,3 @@ function load() {
     main.innerHTML = "<p>データの取得に失敗しました。</p>";
   });
 }
-
-function upload(event) {
-  event.preventDefault(); // フォームのデフォルト送信を防止
-
-  // フォームデータを取得
-  const formData = {
-    username: localStorage.getItem('username'),
-    usericon: localStorage.getItem('usericon'),
-    title: document.getElementById('title').value,
-    caption: document.getElementById('caption').value,
-    image: document.getElementById('image').value
-  };
-
-  // POST リクエストを作成
-  fetch(GoogleAppScriptURL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(formData)
-  })
-  .then(response => response.json())
-  .then(data => {
-    // サーバーからのレスポンスメッセージを表示
-    document.getElementById('responseMessage').innerText = data.message;
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    document.getElementById('responseMessage').innerText = 'Error: Failed to post data.';
-  });
-}
-
-// フォームの送信イベントを監視
-document.getElementById('postForm').addEventListener('submit', upload);
-
