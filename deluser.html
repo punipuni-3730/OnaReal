@@ -16,31 +16,17 @@
                 <a href="#"><img src="images/black.png" alt="Control Button 1"></a>
             </div>
             <div class="logo">
-                <a href="#"><img src="images/logo.png" alt="Logo"></a>
+                <a href="index.html"><img src="images/logo.png" alt="Logo"></a>
             </div>
             <div class="control-button">
                 <a href="#"><img src="images/black.png" alt="Control Button 2"></a>
             </div>
         </nav>
         <main class="main" id="main">
-            <p style="text-align: center;">Set your name.</p>
-            <form id="setuser">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required><br><br>
-                
-                <label for="usericon">User Icon:</label>
-                <input type="text" id="usericon" name="usericon" required style="visibility: hidden;"><br><br>
-                </form>
-            <div id="preview-container">
-                <img id="preview">
-            </div>
-            <form id="upload-form">
-                <input type="file" id="image-upload" accept="image/*" />
-                <label for="image-upload" class="custom-upload-button">Upload user icon</label>
-            </form>
-            <button type="submit" style="margin-top: 40px;">Register</button>
+            <p style="text-align: center;">Delete your name?</p>
+            <button type="submit" onclick="deluser()">Delete</button>
         </main>
     </div>
-    <script src="setuser.js"></script>
+    <script src="deluser.js"></script>
 </body>
 </html>

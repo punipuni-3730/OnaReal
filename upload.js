@@ -49,7 +49,7 @@ var fileInput = document.getElementById('image-upload');
               alert('Image has been uploaded!');
               document.getElementById('image').value = response.url.slice(32);
               document.getElementById('image').value = document.getElementById('image').value.slice(0,-18);
-              document.getElementById('image').value = 'https://drive.google.com/thumbnail?id='+document.getElementById('image').value;
+              document.getElementById('image').value = 'https://lh3.googleusercontent.com/d/'+document.getElementById('image').value;
             } else {
               alert('ERROR');
             }

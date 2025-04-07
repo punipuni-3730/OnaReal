@@ -6,32 +6,34 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     height: 170%;
 }
-img{
+
+img {
     height: 100%;
     margin: 0;
 }
-.nav-control{
+
+.nav-control {
     height: 30px;
     width: 90%;
-    margin: auto;
-    margin-top: 30px;
-    margin-bottom: 10px;
+    margin: 30px auto 10px auto;
     display: flex;
 }
-.control-button{
+
+.control-button {
     height: 100%;
 }
-.logo{
+
+.logo {
     height: 100%;
     margin: auto;
 }
+
 .sortbar {
-    margin-top: 20px;
+    margin: 20px auto 0 auto;
     width: 70%;
     max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
 }
+
 #sortselect {
     background-color: black;
     color: white;
@@ -42,69 +44,65 @@ img{
     text-align: center;
     border-radius: 999px;
 }
-.main{
-    margin-top: 20px;
-    max-width: 700px;
-    margin-left: auto;
-    margin-right: auto;
+
+.main {
+    margin: 20px auto 0 auto;
+    max-width: 500px;
 }
-.post{
+
+.post {
     margin-top: 50px;
 }
-.post_user_icon{
-    width: 40px;
-}
-.post_user_icon img{
-    border-radius:50%;
-}
-.post_user{
+
+.post_user {
     display: flex;
     font-size: 1.5rem;
     color: white;
-    margin: 0;
+    margin: 1%;
     height: 30px;
-    margin:1%;
 }
-.post_user a{
-    color: aliceblue;
-    text-decoration:none;
+
+.post_user_icon {
+    width: 35px;
+    height: 35px;
+    overflow: hidden;
+    border-radius: 50%;
 }
-.post_photo{
+
+.post_user_icon img {
     width: 100%;
-    aspect-ratio: 1/1;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 50%;
 }
-.post_photo img{
+
+.post_user_name {
+    margin-left: 10px;
+}
+
+.post_user a {
+    color: aliceblue;
+    text-decoration: none;
+}
+
+.post_photo {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+}
+
+.post_photo img {
+    margin-top: 10px;
     width: 100%;
     object-fit: contain;
 }
-.post_captions{
+
+.post_captions {
     line-height: 0px;
 }
-input{
-    border:none;
-    outline:none;
-    display:inline-block;
-    height:30px;
-    vertical-align:middle;
-    position:relative;
-    bottom:14px;
-    right:9px;
-    border-radius:22px;
-    width:220px;
-    box-sizing:border-box;
-    padding:0;
-    margin-top: 25px;
-    font-size: 20px;
-  }
-.postblocklabel{
-    display: inline-block;
-    width: 150px;
-}
-.postform{
-    text-align: center;
-}
-button {
-    border: 2px solid white;
+
+input {
+    border: none;
     outline: none;
     display: inline-block;
     height: 30px;
@@ -113,10 +111,22 @@ button {
     bottom: 14px;
     right: 9px;
     border-radius: 22px;
+    width: 220px;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 25px 0 0 10px;
+    font-size: 20px;
+}
+
+button {
+    border: 2px solid white;
+    outline: none;
+    height: 30px;
+    border-radius: 22px;
     width: 100px;
     box-sizing: border-box;
     padding: 0;
-    margin-top: 25px;
+    margin: 25px auto 0 auto;
     font-size: 20px;
     background-color: black;
     color: aliceblue;
@@ -124,43 +134,57 @@ button {
     line-height: 30px;
     cursor: pointer;
     transition: background-color 0.3s, color 0.3s;
+    display: block;
+    position: relative;
+    bottom: 14px;
 }
 
 button:hover {
     background-color: white;
     color: black;
 }
-.uploadphoto{
+
+.postblocklabel {
+    display: inline-block;
+    width: 150px;
+}
+
+.postform {
+    text-align: center;
+}
+
+.uploadphoto,
+.photoupload {
     margin-left: auto;
     margin-right: auto;
 }
-.photoupload{
-    margin-left: auto;
-    margin-right: auto;
+
+.photoupload {
     width: 80px;
 }
+
 #preview {
     max-width: 300px;
     max-height: 300px;
     margin-top: 10px;
 }
+
 #uploaded-image {
     display: block;
     margin-top: 10px;
 }
+
 #preview-container {
     display: flex;
-    justify-content: center; /* 水平方向に中央 */
-    align-items: center; /* 垂直方向に中央 */
+    justify-content: center;
+    align-items: center;
     margin-top: 20px;
 }
 
-/* ファイル入力を隠す */
 #image-upload {
     display: none;
 }
 
-/* カスタムボタン */
 .custom-upload-button {
     display: inline-block;
     padding: 10px 20px;
@@ -170,13 +194,14 @@ button:hover {
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
-    margin-top: 20px; /* 上に少し余白を追加 */
+    margin-top: 20px;
 }
 
 .custom-upload-button:hover {
     background-color: #0056b3;
 }
-form#upload-form{
+
+form#upload-form {
     text-align: center;
     display: flex;
     justify-content: center;

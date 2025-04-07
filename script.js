@@ -46,7 +46,7 @@ function load() {
         <div class="post" id="post">
           <div class="post_user">
             <div class="post_user_icon">
-              <a href=""><img src="${data[i].user_icon}" referrerpolicy="no-referrer" id="usericon"></a>
+              <a href="#"><img src="${data[i].user_icon}" referrerpolicy="no-referrer" id="usericon"></a>
             </div>          
             <div class="post_user_name">
               <a>${data[i].username}</a>
