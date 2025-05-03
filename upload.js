@@ -1,5 +1,5 @@
-const GoogleAppScriptURLPhoto = 'https://script.google.com/macros/s/AKfycbzxXj-5u8XuuMvY_U8KPm5wH2gzcyyT46IYlxC3NAENmkj8FZ14SfNLWHkssPdaxJjF/exec';
-const GoogleAppScriptURL = 'https://script.google.com/macros/s/AKfycbyQ1bvSxHljNJTDHeS_ENwSnphvOS8oQ-NwAEg8S5r5TUe5R1oA8BHREnF9yKhizIQavw/exec';
+const GoogleAppScriptURLPhoto = 'https://script.google.com/macros/s/AKfycbwYDmrRf3k9Pz10NUq8RXVfumARY-WmzbJ_9iXzPDVHJ7SZr4o4bK2VKrVFmI_J0F7g/exec';
+const GoogleAppScriptURL = 'https://script.google.com/macros/s/AKfycbypTtevggemLieCV7HN8awpWvimRtHp2RVUC2YEqaTblp9HO-5DrYvvAl-suyH4xyYTUA/exec';
 
 // 画像のプレビュー表示
 const uploadInput = document.getElementById('image-upload');
@@ -40,8 +40,7 @@ document.getElementById('image-upload').addEventListener('change', function(even
     function sendData(ip) {
       var formData = {
         filename: filename,
-        file: base64data,
-        ip: ip
+        file: base64data
       };
 
       var xhr = new XMLHttpRequest();
@@ -67,8 +66,7 @@ document.getElementById('image-upload').addEventListener('change', function(even
       };
 
       var params = 'filename=' + encodeURIComponent(formData.filename) +
-                   '&file=' + encodeURIComponent(formData.file) +
-                   '&ip=' + encodeURIComponent(formData.ip);
+                   '&file=' + encodeURIComponent(formData.file);
       xhr.send(params);
     }
   };
