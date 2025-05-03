@@ -1,5 +1,5 @@
 const GoogleAppScriptURLPhoto = 'https://script.google.com/macros/s/AKfycbwYDmrRf3k9Pz10NUq8RXVfumARY-WmzbJ_9iXzPDVHJ7SZr4o4bK2VKrVFmI_J0F7g/exec';
-const GoogleAppScriptURL = 'https://script.google.com/macros/s/AKfycbypTtevggemLieCV7HN8awpWvimRtHp2RVUC2YEqaTblp9HO-5DrYvvAl-suyH4xyYTUA/exec';
+const GoogleAppScriptURL = 'https://script.google.com/macros/s/AKfycbwx1DuCms5x7T6ROrupWJYO7UvtvtirCYGGj-_yCvarJNG_9VXjVmcx1cQoXJ6WPYdsQw/exec';
 // 画像のプレビュー表示
 const uploadInput = document.getElementById('image-upload');
 const previewImg = document.getElementById('preview');
