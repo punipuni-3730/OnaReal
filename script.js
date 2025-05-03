@@ -1,4 +1,4 @@
-const GoogleAppScriptURL = 'https://script.google.com/macros/s/AKfycbzz_B9syhbtkzrSlbXMCMC3q3DUjr4anEXt2-_FlpNXyp6Mc2bPXIG05Jn8uhaoECUVfw/exec';
+const GoogleAppScriptURL = 'https://script.google.com/macros/s/AKfycbwx1DuCms5x7T6ROrupWJYO7UvtvtirCYGGj-_yCvarJNG_9VXjVmcx1cQoXJ6WPYdsQw/exec';
 
 document.addEventListener('DOMContentLoaded', function() {
   const usr = localStorage.getItem('username');
