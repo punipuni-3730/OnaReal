@@ -65,6 +65,6 @@ function load() {
   .catch(error => {
     console.error('Error fetching data:', error);
     let main = document.getElementById('main');
-    main.innerHTML = "<p>データの取得に失敗しました。</p>";
+    main.innerHTML = "<p>Failed to get data.</p>";
   });
 }

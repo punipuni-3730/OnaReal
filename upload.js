@@ -53,6 +53,7 @@ document.getElementById('image-upload').addEventListener('change', function(even
           if (response.result === 'Completed') {
             const id = response.url.match(/[-\w]{25,}/)[0];
             document.getElementById('image').value = `https://lh3.googleusercontent.com/d/${id}`;
+            alert('Upload successful!');
           } else {
             alert('Upload failed: Please try again.');
           }
