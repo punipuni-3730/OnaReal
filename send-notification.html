@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="sheet.css" rel="stylesheet">
+    <link rel="apple-touch-icon" type="image/png" href="images/apple-touch-icon-180x180.png">
+    <link rel="icon" type="image/png" href="images/icon-192x192.png">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>通知送信</title>
+</head>
+<body>
+    <div class="display">
+        <main class="main" id="main">
+            <h2>通知を送信</h2>
+            <form id="notify-form" style="margin-bottom:2em;">
+                <label for="notify-title">タイトル:</label><br>
+                <input type="text" id="notify-title" name="notify-title" required style="width:100%;"><br><br>
+                <label for="notify-body">本文:</label><br>
+                <textarea id="notify-body" name="notify-body" required style="width:100%;height:60px;"></textarea><br><br>
+                <button type="submit">送信</button>
+            </form>
+            <div id="notify-result"></div>
+        </main>
+    </div>
+    <a href="deluser.html" style="position: fixed; left: 20px; bottom: 20px; z-index: 9999; opacity: 0.7;">
+        <img src="images/black.png" alt="back to deluser" style="width: 48px; height: 48px;">
+    </a>
+    <script>
+    document.getElementById('notify-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const title = document.getElementById('notify-title').value;
+        const body = document.getElementById('notify-body').value;
+        const resultDiv = document.getElementById('notify-result');
+        resultDiv.textContent = '送信中...';
+        try {
+            const res = await fetch('https://proxy-onareal.s-salmon.net/send-global-notification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, body })
+            });
+            if (res.ok) {
+                resultDiv.textContent = '通知を送信しました。';
+            } else {
+                resultDiv.textContent = '送信に失敗しました。';
+            }
+        } catch (err) {
+            resultDiv.textContent = 'エラー: ' + err.message;
+        }
+    });
+    </script>
+</body>
+</html>

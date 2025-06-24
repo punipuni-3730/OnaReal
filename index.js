@@ -28,13 +28,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (usr) {
       const main = document.getElementById("main");
       if (main) {
-        // デバッグ情報の後にWelcomeメッセージを挿入
-        const debugInfo = document.getElementById('debug-info');
-        if (debugInfo) {
-          debugInfo.insertAdjacentHTML('afterend', `<p>Welcome, ${usr}!</p>`);
-        } else {
-          main.insertAdjacentHTML('afterbegin', `<p>Welcome, ${usr}!</p>`);
-        }
+        // Welcomeメッセージを挿入
+        main.insertAdjacentHTML('afterbegin', `<p>Welcome, ${usr}!</p>`);
       }
     }
   } else {

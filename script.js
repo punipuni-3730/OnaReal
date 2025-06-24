@@ -70,8 +70,7 @@ function load() {
 function displayPosts(posts) {
   let main = document.getElementById('main');
   
-  // デバッグ情報とWelcomeメッセージを保持
-  const debugInfo = document.getElementById('debug-info');
+  // Welcomeメッセージを保持
   const welcomeMessage = main.querySelector('p');
   
   // 投稿表示用のコンテナを作成または取得

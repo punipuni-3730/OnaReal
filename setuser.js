@@ -159,30 +159,35 @@ function sanitizeInput(input) {
   return sanitized;
 }
 
-function setuser(event) {
-  event.preventDefault();
-  if (document.getElementById('username').value.trim() == '') {
-    alert('Please enter a username.');
-    return;
-  }
-  if (document.getElementById('usericon').value.trim() == '') {
-    alert('Please upload your icon or wait for it to finish.');
-    return;
-  }
-
-  localStorage.setItem('username', sanitizeInput(document.getElementById('username').value));
-  localStorage.setItem('usericon', document.getElementById('usericon').value);
-
-  if (localStorage.getItem('username')) {
-      localStorage.setItem('state', '1');
-      window.location.href = 'index.html';
-  }
+// Registerボタンで登録・通知許可・FCMトークン取得後にindex.htmlへ遷移
+const registerBtn = document.getElementById('register-btn');
+if (registerBtn) {
+  registerBtn.addEventListener('click', async function() {
+    const username = document.getElementById('username').value.trim();
+    const usericon = document.getElementById('usericon').value.trim();
+    if (!username) {
+      alert('Please enter a username.');
+      return;
+    }
+    if (!usericon) {
+      alert('Please upload your icon or wait for it to finish.');
+      return;
+    }
+    // 通知許可
+    if ('Notification' in window) {
+      try {
+        await Notification.requestPermission();
+        if (window.getFCMToken) {
+          await window.getFCMToken();
+        }
+      } catch (e) {}
+    }
+    // ユーザー情報保存
+    localStorage.setItem('username', sanitizeInput(username));
+    localStorage.setItem('usericon', usericon);
+    localStorage.setItem('state', '1');
+    window.location.href = 'index.html';
+  });
 }
-
-function deleteuser() {
-  localStorage.clear();
-}
-
-document.querySelector('button[type="submit"]').addEventListener('click', setuser);
 
 
