@@ -1,3 +1,39 @@
+// Service Worker全解除＆firebase-messaging-sw.jsのみ再登録
+(function() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      const unregisterPromises = registrations.map(reg => reg.unregister());
+      Promise.all(unregisterPromises).then(function() {
+        // firebase-messaging-sw.jsのみ再登録
+        navigator.serviceWorker.register('firebase-messaging-sw.js').catch(function(e){
+          console.warn('Service Worker登録失敗:', e);
+        });
+      });
+    });
+  }
+})();
+
+// --- Service Worker全解除＆firebase-messaging-sw.jsのみ再登録 ---
+(async function manageServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    // 既存のService Workerを全て解除
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (const reg of registrations) {
+      try {
+        await reg.unregister();
+      } catch (e) {
+        // エラーは無視
+      }
+    }
+    // firebase-messaging-sw.jsのみ再登録
+    try {
+      await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    } catch (e) {
+      // 登録失敗時も無視
+    }
+  }
+})();
+
 const GoogleAppScriptURL = 'https://proxy-onareal.s-salmon.net';
 
 // キャッシュ用の変数
