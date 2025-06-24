@@ -123,8 +123,14 @@
         }
       });
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('service-worker.js');
+        window.addEventListener('load', async () => {
+          // 既存の全てのService Workerをアンレジスター
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const reg of registrations) {
+            await reg.unregister();
+          }
+          // firebase-messaging-sw.jsのみを登録
+          await navigator.serviceWorker.register('/firebase-messaging-sw.js');
         });
       }
       // 通知許可リクエスト処理を追加

@@ -33,11 +33,14 @@
         const body = document.getElementById('notify-body').value;
         const resultDiv = document.getElementById('notify-result');
         resultDiv.textContent = '送信中...';
+        // 一意なIDと固定tagを付与
+        const tag = 'onareal-global';
+        const messageId = 'msg-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
         try {
             const res = await fetch('https://proxy-onareal.s-salmon.net/send-global-notification', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, body })
+                body: JSON.stringify({ title, body, tag, messageId })
             });
             if (res.ok) {
                 resultDiv.textContent = '通知を送信しました。';

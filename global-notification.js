@@ -73,47 +73,45 @@ class GlobalNotificationManager {
 
   // フォアグラウンド通知の処理
   handleForegroundNotification(payload) {
-    const messageId = payload.data?.messageId || payload.messageId || Date.now().toString();
-    
+    // 通知のtagとmessageIdで重複防止
+    const tag = payload.notification?.tag || payload.data?.tag || 'onareal-global';
+    const messageId = payload.data?.messageId || payload.messageId || tag;
+
     // 重複チェック
     if (this.sentMessageIds.has(messageId)) {
       return;
     }
-    
+
     // クールダウンチェック
     const now = Date.now();
     if (now - this.lastNotificationTime < this.notificationCooldown) {
       return;
     }
-    
+
     this.lastNotificationTime = now;
     this.sentMessageIds.add(messageId);
-    
+
     // 古いIDを削除（メモリリーク防止）
     if (this.sentMessageIds.size > this.maxStoredIds) {
       const idsArray = Array.from(this.sentMessageIds);
       this.sentMessageIds.clear();
       idsArray.slice(-this.maxStoredIds).forEach(id => this.sentMessageIds.add(id));
     }
-    
+
     // 通知の表示
     if ('Notification' in window && Notification.permission === 'granted') {
       const notification = new Notification(payload.notification?.title || 'OnaReal', {
         body: payload.notification?.body || payload.data?.body || '新しい通知があります',
         icon: '/images/icon-192x192.png',
         badge: '/images/icon-192x192.png',
-        tag: 'onareal-notification',
+        tag: tag,
         requireInteraction: false,
         silent: false
       });
-      
-      // 通知クリック時の処理
       notification.onclick = function() {
         window.focus();
         notification.close();
       };
-      
-      // 5秒後に自動で閉じる
       setTimeout(() => {
         notification.close();
       }, 5000);
