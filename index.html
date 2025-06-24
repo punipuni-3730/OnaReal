@@ -8,7 +8,6 @@
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <link href="sheet.css" rel="stylesheet">
-    <script src="script.js"></script>
     <title>Ona Real. Web App</title>
 </head>
 <body>
@@ -27,16 +26,484 @@
         <div class="sortbar">
             <select id="sortselect">
                 <option value="newest" selected>新しい順</option>
-                   <option value="oldest">古い順</option>
-                   <option value="popular">人気順</option>
-                   <option value="random">シャッフル</option>
-                </select>
+                <option value="oldest">古い順</option>
+                <option value="popular">人気順</option>
+                <option value="random">シャッフル</option>
+            </select>
+        </div>
+        <div class="main" id="main">
+            <div id="debug-info" style="background: #ffffff; padding: 10px; margin: 10px; border-radius: 5px; font-size: 12px; font-family: monospace; color: #000; border: 1px solid #ccc;">
+                <strong>デバッグ情報:</strong><br>
+                <span id="debug-content">読み込み中...</span>
             </div>
-            <div class="main" id="main">
-                <p>Click on the OnaReal logo to get the post</p>
+            <p>Click on the OnaReal logo to get the post</p>
+            <div id="pwa-install-prompt" style="display:none; background:#222; color:white; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,0.08); padding:1.5em 2em; margin:2em 0; text-align:center;">
+                <h2 style="font-size:1.2em; margin-bottom:0.5em;">アプリとしてインストールできます</h2>
+                <p>「ホーム画面に追加」や「インストール」ボタンから<br>このサービスをアプリとしてご利用いただけます。</p>
+                <button id="install-btn" style="margin-top:1em;">Install</button>
+            </div>
+            <div id="notification-prompt" style="display:none; background:#222; color:white; border-radius:12px; padding:1.5em 2em; margin:2em 0; text-align:center;">
+                <h2 style="font-size:1.2em; margin-bottom:0.5em;">通知を有効に</h2>
+                <p>iPhoneで最新の投稿通知を受け取るには、通知を許可してください。</p>
+                <button id="notification-btn" style="margin-top:1em; background:#4CAF50; color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">通知を許可</button>
             </div>
         </div>
     </div>
-    <script src="index.js" async defer></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js"></script>
+    
+    <!-- Firebase設定 -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- 通知機能 -->
+    <script src="global-notification.js"></script>
+    <script src="notification.js"></script>
+    <script src="script.js"></script>
+    <script src="index.js"></script>
+    
+    <script>
+        let deferredPrompt;
+        const pwaPrompt = document.getElementById('pwa-install-prompt');
+        const installBtn = document.getElementById('install-btn');
+        let swRegistration = null;
+        
+        // Service Worker登録
+        async function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const options = { updateViaCache: 'none' };
+                    swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', options);
+                    console.log('Service Worker registered:', swRegistration);
+                    updateDebugInfo('Service Worker登録成功');
+                    
+                    if (swRegistration.active) {
+                        console.log('Service Worker is active');
+                        updateDebugInfo('Service Workerアクティブ');
+                    } else {
+                        console.log('Waiting for Service Worker to activate');
+                        swRegistration.addEventListener('updatefound', () => {
+                            const newWorker = swRegistration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'activated') {
+                                    console.log('Service Worker activated');
+                                    updateDebugInfo('Service Workerアクティブ化完了');
+                                }
+                            });
+                        });
+                    }
+                } catch (error) {
+                    console.error('Service Worker登録エラー:', error);
+                    updateDebugInfo(`Service Worker登録エラー: ${error.message}`);
+                }
+            }
+        }
+        
+        // 更新通知を表示
+        function showUpdateNotification() {
+            const updateDiv = document.createElement('div');
+            updateDiv.innerHTML = `
+                <div style="position: fixed; top: 10px; right: 10px; background: #2196F3; color: white; 
+                     padding: 15px; border-radius: 8px; z-index: 10002; box-shadow: 0 4px 12px rgba(0,0,0,0.3); 
+                     max-width: 300px;">
+                    <h4 style="margin: 0 0 10px 0;">🔄 新しいバージョンが利用可能</h4>
+                    <p style="margin: 0 0 15px 0; font-size: 14px;">アプリを更新して最新の機能をお楽しみください</p>
+                    <button onclick="updateApp()" 
+                            style="background: white; color: #2196F3; border: none; 
+                                   padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 8px;">
+                        更新
+                    </button>
+                    <button onclick="this.parentElement.parentElement.remove()" 
+                            style="background: transparent; color: white; border: 1px solid white; 
+                                   padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                        後で
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(updateDiv);
+        }
+        
+        // アプリを更新
+        function updateApp() {
+            if (swRegistration && swRegistration.waiting) {
+                swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                updateDebugInfo('アプリ更新実行');
+            }
+        }
+        
+        // 手動キャッシュ更新
+        async function forceCacheUpdate() {
+            if (swRegistration) {
+                try {
+                    const channel = new MessageChannel();
+                    channel.port1.onmessage = (event) => {
+                        if (event.data.type === 'CACHE_UPDATED') {
+                            showCacheUpdateSuccess();
+                            updateDebugInfo('キャッシュ更新成功');
+                        } else if (event.data.type === 'CACHE_UPDATE_ERROR') {
+                            showCacheUpdateError();
+                            updateDebugInfo('キャッシュ更新エラー');
+                        }
+                    };
+                    swRegistration.active.postMessage({ type: 'CACHE_UPDATE' }, [channel.port2]);
+                } catch (error) {
+                    console.error('キャッシュ更新エラー:', error);
+                    updateDebugInfo(`キャッシュ更新エラー: ${error.message}`);
+                }
+            }
+        }
+        
+        // キャッシュ更新成功
+        function showCacheUpdateSuccess() {
+            const successDiv = document.createElement('div');
+            successDiv.innerHTML = `
+                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                     background: #4CAF50; color: white; padding: 20px; border-radius: 8px; 
+                     z-index: 10001; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                    <h3>✅ キャッシュ更新完了</h3>
+                    <p>最新のデータに更新されました</p>
+                    <button onclick="this.parentElement.remove(); location.reload();" 
+                            style="background: white; color: #4CAF50; border: none; 
+                                   padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-top: 10px;">
+                        ページを再読み込み
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(successDiv);
+        }
+        
+        // キャッシュ更新エラー
+        function showCacheUpdateError() {
+            const errorDiv = document.createElement('div');
+            errorDiv.innerHTML = `
+                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                     background: #f44336; color: white; padding: 20px; border-radius: 8px; 
+                     z-index: 10001; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                    <h3>❌ キャッシュ更新エラー</h3>
+                    <p>手動でページを再読み込みしてください</p>
+                    <button onclick="this.parentElement.remove(); location.reload();" 
+                            style="background: white; color: #f44336; border: none; 
+                                   padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-top: 10px;">
+                        再読み込み
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(errorDiv);
+        }
+        
+        // PWAインストールプロンプト
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (pwaPrompt) {
+                pwaPrompt.style.display = 'block';
+                updateDebugInfo('PWAインストールプロンプト表示');
+            }
+        });
+        
+        // PWAインストール後
+        window.addEventListener('appinstalled', () => {
+            if (pwaPrompt) {
+                pwaPrompt.style.display = 'none';
+            }
+            updateDebugInfo('PWAインストール完了');
+            setTimeout(() => {
+                checkAndRequestNotificationPermission();
+            }, 1000);
+        });
+        
+        // インストールボタン
+        if (installBtn) {
+            installBtn.addEventListener('click', () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            updateDebugInfo('PWAインストール承諾');
+                        }
+                        deferredPrompt = null;
+                    });
+                }
+            });
+        }
+
+        // 通知許可リクエスト
+        async function requestNotificationPermission() {
+            try {
+                console.log('requestNotificationPermission started');
+                if ('Notification' in window) {
+                    console.log('Notification API available, permission:', Notification.permission);
+                    const shouldRequest = confirm(
+                        'OnaRealアプリからの通知を受け取りますか？\n\n' +
+                        '• 新しい投稿の通知\n' +
+                        '• 重要な更新情報\n' +
+                        '• その他のお知らせ\n\n' +
+                        '「OK」を押すと通知の許可を求められます。'
+                    );
+                    console.log('shouldRequest:', shouldRequest);
+                    if (shouldRequest) {
+                        const permission = await Notification.requestPermission();
+                        console.log('Notification permission result:', permission);
+                        updateDebugInfo(`通知許可結果: ${permission}`);
+                        if (permission === 'granted') {
+                            console.log('Notification permission granted');
+                            showNotificationSuccess();
+                            if (window.globalNotificationManager) {
+                                console.log('Initializing globalNotificationManager');
+                                await window.globalNotificationManager.initialize();
+                            }
+                        } else if (permission === 'denied') {
+                            console.log('Notification permission denied');
+                            showNotificationDeniedPrompt();
+                        }
+                    }
+                } else {
+                    console.error('Notification API not available. Ensure PWA is added to home screen.');
+                    updateDebugInfo('エラー: Notification API未サポート');
+                }
+            } catch (error) {
+                console.error('通知許可エラー:', error);
+                updateDebugInfo(`通知許可エラー: ${error.message}`);
+            }
+        }
+
+        // 通知許可成功
+        function showNotificationSuccess() {
+            const successDiv = document.createElement('div');
+            successDiv.innerHTML = `
+                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                     background: #4CAF50; color: white; padding: 20px; border-radius: 8px; 
+                     z-index: 10001; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                    <h3>✅ 通知が有効になりました</h3>
+                    <p>新しい投稿やお知らせをお届けします</p>
+                    <button onclick="this.parentElement.remove()" 
+                            style="background: white; color: #4CAF50; border: none; 
+                                   padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-top: 10px;">
+                        閉じる
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(successDiv);
+            setTimeout(() => {
+                if (successDiv.parentElement) {
+                    successDiv.remove();
+                }
+            }, 3000);
+        }
+
+        // 通知許可拒否プロンプト
+        function showNotificationDeniedPrompt() {
+            const deniedPrompt = document.createElement('div');
+            deniedPrompt.innerHTML = `
+                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                     background: #f44336; color: white; padding: 20px; border-radius: 8px; 
+                     z-index: 10001; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                    <h3>❌ 通知が無効です</h3>
+                    <p>iPhoneの「設定」>「Safari」>「通知」からOnaRealの通知を有効にしてください。</p>
+                    <button onclick="this.parentElement.remove()" 
+                            style="background: white; color: #f44336; border: none; 
+                                   padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-top: 10px;">
+                        閉じる
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(deniedPrompt);
+            setTimeout(() => {
+                if (deniedPrompt.parentElement) {
+                    deniedPrompt.remove();
+                }
+            }, 10000);
+        }
+
+        // 通知許可チェック
+        function checkAndRequestNotificationPermission() {
+            updateDebugInfo();
+            console.log('通知許可チェック開始', {
+                state: localStorage.getItem('state'),
+                notificationRequested: localStorage.getItem('notificationRequested'),
+                notificationSupported: 'Notification' in window,
+                permission: Notification?.permission,
+                isStandalone: window.navigator.standalone
+            });
+            
+            if (!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone) {
+                console.warn('PWAがホーム画面に追加されていません。通知が動作しません。');
+                if (pwaPrompt) {
+                    pwaPrompt.style.display = 'block';
+                }
+                updateDebugInfo('PWA未インストール: ホーム画面に追加してください');
+                return;
+            }
+            
+            if ('Notification' in window) {
+                if (Notification.permission === 'denied') {
+                    const notificationPrompt = document.getElementById('notification-prompt');
+                    if (notificationPrompt) {
+                        notificationPrompt.style.display = 'block';
+                        const notificationBtn = document.getElementById('notification-btn');
+                        if (notificationBtn) {
+                            notificationBtn.addEventListener('click', () => {
+                                console.log('通知許可ボタンクリック');
+                                requestNotificationPermission();
+                                localStorage.setItem('notificationRequested', 'true');
+                                notificationPrompt.style.display = 'none';
+                                updateDebugInfo('通知許可リクエスト実行');
+                            }, { once: true });
+                        } else {
+                            console.error('通知ボタンが見つかりません');
+                            updateDebugInfo('エラー: 通知ボタンが見つかりません');
+                        }
+                    } else {
+                        console.error('通知プロンプト要素が見つかりません');
+                        updateDebugInfo('エラー: 通知プロンプト要素が見つかりません');
+                    }
+                } else if (Notification.permission === 'denied') {
+                    console.log('通知が拒否されています。設定から有効にしてください。');
+                    showNotificationDeniedPrompt();
+                    updateDebugInfo('通知拒否: 設定から有効にしてください');
+                } else if (Notification.permission === 'granted') {
+                    console.log('通知が許可されています');
+                    updateDebugInfo('通知許可済み');
+                    if (window.globalNotificationManager) {
+                        window.globalNotificationManager.initialize();
+                    }
+                }
+            } else {
+                console.error('Notification APIが利用できません');
+                updateDebugInfo('エラー: Notification API未サポート');
+            }
+        }
+        
+        // デバッグ情報更新
+        function updateDebugInfo(message = '') {
+            const debugContent = document.getElementById('debug-content');
+            if (debugContent) {
+                const state = localStorage.getItem('state') || '未設定';
+                const notificationRequested = localStorage.getItem('notificationRequested') || '未設定';
+                const notificationPermission = 'Notification' in window ? Notification.permission : '未サポート';
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                const isStandalone = window.navigator.standalone === true;
+                const serviceWorkerState = swRegistration?.active ? 'アクティブ' : (swRegistration?.installing ? 'インストール中' : '未登録');
+                
+                debugContent.innerHTML = `
+                    state: ${state}<br>
+                    notificationRequested: ${notificationRequested}<br>
+                    Notification.permission: ${notificationPermission}<br>
+                    iOS: ${isIOS}<br>
+                    PWA Standalone: ${isStandalone}<br>
+                    Service Worker: ${serviceWorkerState}<br>
+                    ${message ? `メッセージ: ${message}<br>` : ''}
+                    User Agent: ${navigator.userAgent.substring(0, 50)}...
+                `;
+            }
+        }
+        
+        // 開発環境での制御パネル
+        function setupDevelopmentControls() {
+            if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+                const devPanel = document.createElement('div');
+                devPanel.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    left: 20px;
+                    background: rgba(0,0,0,0.8);
+                    color: white;
+                    padding: 10px;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    z-index: 10000;
+                    display: none;
+                `;
+                devPanel.innerHTML = `
+                    <div style="margin-bottom: 8px;">
+                        <strong>Service Worker制御</strong>
+                    </div>
+                    <button onclick="forceServiceWorkerUpdate()" style="margin: 2px; padding: 4px 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                        強制更新
+                    </button>
+                    <button onclick="skipServiceWorkerWaiting()" style="margin: 2px; padding: 4px 8px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                        即座にアクティブ
+                    </button>
+                    <button onclick="checkUpdateOnStart()" style="margin: 2px; padding: 4px 8px; background: #ffc107; color: black; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                        起動時更新チェック
+                    </button>
+                    <button onclick="requestNotificationPermission()" style="margin: 2px; padding: 4px 8px; background: #e91e63; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                        通知許可テスト
+                    </button>
+                    <button onclick="checkAndRequestNotificationPermission()" style="margin: 2px; padding: 4px 8px; background: #9c27b0; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                        通知チェック
+                    </button>
+                    <button onclick="toggleDevPanel()" style="margin: 2px; padding: 4px 8px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                        閉じる
+                    </button>
+                `;
+                document.body.appendChild(devPanel);
+                
+                const devButton = document.createElement('button');
+                devButton.textContent = '🔧';
+                devButton.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    left: 20px;
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    border-radius: 50%;
+                    width: 40px;
+                    height: 40px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    z-index: 10001;
+                `;
+                devButton.onclick = toggleDevPanel;
+                document.body.appendChild(devButton);
+                
+                window.devPanel = devPanel;
+            }
+        }
+        
+        function toggleDevPanel() {
+            if (window.devPanel) {
+                window.devPanel.style.display = window.devPanel.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+        
+        function forceServiceWorkerUpdate() {
+            if (swRegistration) {
+                swRegistration.update();
+                updateDebugInfo('Service Worker更新開始');
+            }
+        }
+        
+        function skipServiceWorkerWaiting() {
+            if (swRegistration && swRegistration.waiting) {
+                swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                updateDebugInfo('Service Worker即座にアクティブ');
+            }
+        }
+        
+        function checkUpdateOnStart() {
+            if (swRegistration) {
+                swRegistration.active.postMessage({ type: 'CHECK_UPDATE_ON_START' });
+                updateDebugInfo('起動時更新チェック実行');
+            }
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            registerServiceWorker();
+            setupDevelopmentControls();
+            checkAndRequestNotificationPermission();
+        });
+        
+        // グローバル関数
+        window.forceCacheUpdate = forceCacheUpdate;
+        window.updateApp = updateApp;
+        window.forceServiceWorkerUpdate = forceServiceWorkerUpdate;
+        window.skipServiceWorkerWaiting = skipServiceWorkerWaiting;
+        window.checkUpdateOnStart = checkUpdateOnStart;
+    </script>
 </body>
 </html>

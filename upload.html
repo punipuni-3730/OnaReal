@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="sheet.css" rel="stylesheet">
     <link rel="apple-touch-icon" type="image/png" href="images/apple-touch-icon-180x180.png">
     <link rel="icon" type="image/png" href="images/icon-192x192.png">
+    <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link href="sheet.css" rel="stylesheet">
     <title>Ona Real. Web App</title>
 </head>
 <body>
@@ -24,10 +25,7 @@
         </div>
         <div class="main" id="main">
             <form id="upload-form">
-                <!-- 隠されたファイル入力 -->
                 <input type="file" id="image-upload" accept="image/*" />
-                
-                <!-- カスタムボタン -->
                 <label for="image-upload" class="custom-upload-button">Upload Image</label>
                 <button type="button" id="upload-button"style="visibility: hidden";>Submit</button>
             </form>
@@ -46,6 +44,17 @@
             <div id="responseMessage">upload imageを押す<br>画像URL表示されてからPostしてください</div>
         </div>
     </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
+    
+    <!-- Firebase設定 -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- 通知機能 -->
+    <script src="upload.js"></script>
+    <script src="notification.js"></script>
+    <script src="global-notification.js"></script>
 </body>
-<script src="upload.js"></script>
 </html>

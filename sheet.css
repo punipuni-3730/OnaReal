@@ -23,6 +23,13 @@ img {
     height: 100%;
 }
 
+.control-button a {
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    padding: 5px 10px;
+}
+
 .logo {
     height: 100%;
     margin: auto;
@@ -98,7 +105,7 @@ img {
 }
 
 .post_captions {
-    line-height: 0px;
+    word-break: break-word;
 }
 
 input {

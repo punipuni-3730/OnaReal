@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" href="images/icon-192x192.png">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <title>Ona Real. Web App</title>
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
     <div class="display">
@@ -23,24 +24,133 @@
             </div>
         </nav>
         <main class="main" id="main">
-            <p style="text-align: center;">Set your name.</p>
-            <form id="setuser">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required><br><br>
-                
-                <label for="usericon">User Icon:</label>
-                <input type="text" id="usericon" name="usericon" required style="visibility: hidden;"><br><br>
-                </form>
-            <div id="preview-container">
-                <img id="preview">
+            <div id="pwa-install-prompt" style="background:#222; color:white; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,0.08); padding:1.5em 2em; margin:2em 0; text-align:center;">
+              <h2 style="font-size:1.2em; margin-bottom:0.5em;">ホーム画面に配置してください</h2>
+              <div id="ios-instructions" style="display:none;">
+                <p>Safariの共有メニューから<br><b>「ホーム画面に追加」</b>を選択してください。</p>
+                <img src="images/shareicon.png" alt="iOS Share" style="height: 70px;">
+              </div>
+              <div id="other-install" style="display:none;">
+                <p>「ホーム画面に追加」や「Install」ボタンから<br>このサービスをアプリとしてご利用いただけます。</p>
+                <button id="install-btn" style="margin-top:1em;">Install</button>
+              </div>
             </div>
-            <form id="upload-form">
-                <input type="file" id="image-upload" accept="image/*" />
-                <label for="image-upload" class="custom-upload-button">Upload user icon</label>
-            </form>
-            <button type="submit" style="margin-top: 40px;">Register</button>
+            <div id="user-form-area" style="display:none;">
+                <p style="text-align: center;">Set your name.</p>
+                <form id="setuser">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required><br><br>
+                    <label for="usericon">User Icon:</label>
+                    <input type="text" id="usericon" name="usericon" required style="visibility: hidden;"><br><br>
+                </form>
+                <div id="preview-container">
+                    <img id="preview">
+                </div>
+                <form id="upload-form">
+                    <input type="file" id="image-upload" accept="image/*" />
+                    <label for="image-upload" class="custom-upload-button">Upload user icon</label>
+                </form>
+                <button id="register-btn" type="button" style="margin-top: 40px;">Register</button>
+            </div>
         </main>
     </div>
     <script src="setuser.js"></script>
+    <script>
+      let deferredPrompt;
+      const pwaPrompt = document.getElementById('pwa-install-prompt');
+      const installBtn = document.getElementById('install-btn');
+      const userFormArea = document.getElementById('user-form-area');
+      const iosInstructions = document.getElementById('ios-instructions');
+      const otherInstall = document.getElementById('other-install');
+      // iOS判定
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      if(isIOS){
+        iosInstructions.style.display = 'block';
+        otherInstall.style.display = 'none';
+      } else {
+        iosInstructions.style.display = 'none';
+        otherInstall.style.display = 'block';
+      }
+      window.addEventListener('beforeinstallprompt', (e) => {
+        if(isIOS) return; // iOSは何もしない
+        e.preventDefault();
+        deferredPrompt = e;
+        pwaPrompt.style.display = 'block';
+        userFormArea.style.display = 'none';
+      });
+      if(installBtn){
+        installBtn.addEventListener('click', () => {
+          // すでにPWAとして開いている場合は何もしない
+          if (
+            window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone
+          ) {
+            return;
+          }
+          if(deferredPrompt){
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+              setTimeout(() => {
+                if (
+                  window.matchMedia('(display-mode: standalone)').matches ||
+                  window.navigator.standalone
+                ) {
+                  pwaPrompt.style.display = 'none';
+                  userFormArea.style.display = 'block';
+                } else {
+                  pwaPrompt.innerHTML = '<h2 style="font-size:1.2em; margin-bottom:0.5em;">PWAでのみご利用いただけます</h2><p>インストール後はホーム画面やアプリ一覧から起動してください。</p>';
+                  userFormArea.style.display = 'none';
+                }
+              }, 1000);
+              deferredPrompt = null;
+            });
+          } else {
+            pwaPrompt.innerHTML = '<h2 style="font-size:1.2em; margin-bottom:0.5em;">PWAでのみご利用いただけます</h2><p>インストール後はホーム画面やアプリ一覧から起動してください。</p>';
+            userFormArea.style.display = 'none';
+          }
+        });
+      }
+      window.addEventListener('DOMContentLoaded', () => {
+        if (
+          window.matchMedia('(display-mode: standalone)').matches ||
+          window.navigator.standalone
+        ) {
+          pwaPrompt.style.display = 'none';
+          userFormArea.style.display = 'block';
+        } else if (isIOS) {
+          pwaPrompt.style.display = 'block';
+          userFormArea.style.display = 'none';
+        }
+      });
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('service-worker.js');
+        });
+      }
+      // 通知許可リクエスト処理を追加
+      document.addEventListener('DOMContentLoaded', function() {
+        const registerBtn = document.getElementById('register-btn');
+        if (registerBtn) {
+          registerBtn.addEventListener('click', async function() {
+            if ('Notification' in window) {
+              const permission = await Notification.requestPermission();
+              if (permission === 'granted') {
+                // 通知許可OK: ここでFCMトークン取得処理を呼ぶ
+                if (window.getFCMToken) {
+                  window.getFCMToken(); // setuser.js等で定義しておく
+                }
+                alert('通知が許可されました');
+              } else if (permission === 'denied') {
+                alert('通知が拒否されました');
+              } else {
+                alert('通知許可が保留されています');
+              }
+            } else {
+              alert('この端末・ブラウザは通知に対応していません');
+            }
+          });
+        }
+      });
+    </script>
 </body>
 </html>

@@ -1,21 +1,48 @@
-const GoogleAppScriptURLPhoto = 'https://script.google.com/macros/s/AKfycbwYDmrRf3k9Pz10NUq8RXVfumARY-WmzbJ_9iXzPDVHJ7SZr4o4bK2VKrVFmI_J0F7g/exec';
-const GoogleAppScriptURL = 'https://script.google.com/macros/s/AKfycbw8CNhv4GkdZ3MILCw6UHshiP558uRghU1Vs6Op8zb-zOSQbEZndESL_WUzGh5Z5gOQ9Q/exec';
-// 画像のプレビュー表示
+const GoogleAppScriptURLPhoto = 'https://proxy-onareal.s-salmon.net/upload';
+const GoogleAppScriptURL = 'https://proxy-onareal.s-salmon.net';
+
 const uploadInput = document.getElementById('image-upload');
 const previewImg = document.getElementById('preview');
 const uploadButton = document.getElementById('upload-button');
 
-// 画像選択後にプレビューを表示するイベントリスナー
 uploadInput.addEventListener('change', (event) => {
   const file = event.target.files[0];
   if (file) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      previewImg.src = e.target.result;
+      resizeAndCompressImage(e.target.result, 500, 0.7, (resizedDataUrl) => {
+        previewImg.src = resizedDataUrl;
+      });
     };
     reader.readAsDataURL(file);
   }
 });
+
+function resizeAndCompressImage(dataUrl, maxSize, quality, callback) {
+  const img = new Image();
+  img.onload = function() {
+    let width = img.width;
+    let height = img.height;
+    if (width > height) {
+      if (width > maxSize) {
+        height *= maxSize / width;
+        width = maxSize;
+      }
+    } else {
+      if (height > maxSize) {
+        width *= maxSize / height;
+        height = maxSize;
+      }
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, width, height);
+    callback(canvas.toDataURL('image/jpeg', quality));
+  };
+  img.src = dataUrl;
+}
 
 document.getElementById('image-upload').addEventListener('change', function(event) {
   var fileInput = document.getElementById('image-upload');
@@ -24,59 +51,67 @@ document.getElementById('image-upload').addEventListener('change', function(even
   var reader = new FileReader();
 
   reader.onloadend = function() {
-    var base64data = reader.result.split(',')[1];
+    var previewContainer = document.getElementById('preview-container');
+    var loadingGif = document.createElement('img');
+    loadingGif.src = 'images/loading.gif';
+    loadingGif.id = 'loading-gif';
+    loadingGif.style.height = '60px';
+    previewContainer.appendChild(loadingGif);
 
-    fetch('https://api.ipify.org?format=json')
-      .then(response => response.json())
-      .then(ipData => {
-        sendData(ipData.ip || '');
-      })
-      .catch(() => {
-        sendData('');
-      });
+    resizeAndCompressImage(reader.result, 500, 0.7, function(resizedDataUrl) {
+      var base64data = resizedDataUrl.split(',')[1];
 
-    function sendData(ip) {
-      var formData = {
-        filename: filename,
-        file: base64data
-      };
+      fetch('https://api.ipify.org?format=json')
+        .then(response => response.json())
+        .then(ipData => {
+          sendData(ipData.ip || '');
+        })
+        .catch(() => {
+          sendData('');
+        });
 
-      var xhr = new XMLHttpRequest();
-      xhr.open('POST', GoogleAppScriptURLPhoto, true);
-      xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+      function sendData(ip) {
+        var formData = {
+          filename: filename,
+          file: base64data
+        };
 
-      xhr.onload = function() {
-        if (xhr.status == 200) {
-          var response = JSON.parse(xhr.responseText);
-          if (response.result === 'Completed') {
-            const id = response.url.match(/[-\w]{25,}/)[0];
-            document.getElementById('usericon').value = `https://lh3.googleusercontent.com/d/${id}`;
-            alert('Upload successful!');
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', GoogleAppScriptURLPhoto, true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+        xhr.onload = function() {
+          var gif = document.getElementById('loading-gif');
+          if (gif) gif.remove();
+          if (xhr.status == 200) {
+            var response = JSON.parse(xhr.responseText);
+            if (response.result === 'Completed') {
+              const id = response.url.match(/[-\w]{25,}/)[0];
+              document.getElementById('usericon').value = `https://lh3.googleusercontent.com/d/${id}`;
+              alert('Upload successful!');
+            } else {
+              alert('Upload failed: Please try again.');
+            }
           } else {
-            alert('Upload failed: Please try again.');
+            alert('Upload failed: server returned status ' + xhr.status);
           }
-        } else {
-          alert('Upload failed: server returned status ' + xhr.status);
-        }
-      };
+        };
 
-      xhr.onerror = function() {
-        alert('Upload failed: network or CORS error. Please try again.');
-      };
+        xhr.onerror = function() {
+          var gif = document.getElementById('loading-gif');
+          if (gif) gif.remove();
+          alert('Upload failed: network or CORS error. Please try again.');
+        };
 
-      var params = 'filename=' + encodeURIComponent(formData.filename) +
-                   '&file=' + encodeURIComponent(formData.file);
-      xhr.send(params);
-    }
+        var params = 'filename=' + encodeURIComponent(formData.filename) +
+                     '&file=' + encodeURIComponent(formData.file);
+        xhr.send(params);
+      }
+    });
   };
 
   reader.readAsDataURL(file);
 });
-
-
-
-
-      
 
 document.addEventListener('DOMContentLoaded', function() {
   if(localStorage.getItem('state') == '1'){
@@ -84,8 +119,47 @@ document.addEventListener('DOMContentLoaded', function() {
   }    
 });
 
+function sanitizeInput(input) {
+  if (typeof input !== 'string') return input;
+  
+  let sanitized = input
+    .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '')
+    .replace(/<script[^>]*>.*?<\/script>/gi, '')
+    .replace(/<object[^>]*>.*?<\/object>/gi, '')
+    .replace(/<embed[^>]*>/gi, '')
+    .replace(/<form[^>]*>.*?<\/form>/gi, '')
+    .replace(/<input[^>]*>/gi, '')
+    .replace(/<textarea[^>]*>.*?<\/textarea>/gi, '')
+    .replace(/<select[^>]*>.*?<\/select>/gi, '')
+    .replace(/<button[^>]*>.*?<\/button>/gi, '')
+    .replace(/<link[^>]*>/gi, '')
+    .replace(/<meta[^>]*>/gi, '')
+    .replace(/<style[^>]*>.*?<\/style>/gi, '')
+    .replace(/<title[^>]*>.*?<\/title>/gi, '')
+    .replace(/<head[^>]*>.*?<\/head>/gi, '')
+    .replace(/<body[^>]*>.*?<\/body>/gi, '')
+    .replace(/<html[^>]*>.*?<\/html>/gi, '')
+    .replace(/<frame[^>]*>.*?<\/frame>/gi, '')
+    .replace(/<frameset[^>]*>.*?<\/frameset>/gi, '')
+    .replace(/<noframes[^>]*>.*?<\/noframes>/gi, '')
+    .replace(/<applet[^>]*>.*?<\/applet>/gi, '')
+    .replace(/<base[^>]*>/gi, '')
+    .replace(/<bgsound[^>]*>/gi, '')
+    .replace(/<xmp[^>]*>.*?<\/xmp>/gi, '')
+    .replace(/<plaintext[^>]*>.*?<\/plaintext>/gi, '')
+    .replace(/<listing[^>]*>.*?<\/listing>/gi, '');
+  
+  sanitized = sanitized
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+  
+  return sanitized;
+}
+
 function setuser(event) {
-  // Prevent the default form submission behavior
   event.preventDefault();
   if (document.getElementById('username').value.trim() == '') {
     alert('Please enter a username.');
@@ -96,19 +170,17 @@ function setuser(event) {
     return;
   }
 
-  // Store the username and usericon in localStorage
-  localStorage.setItem('username', document.getElementById('username').value);
+  localStorage.setItem('username', sanitizeInput(document.getElementById('username').value));
   localStorage.setItem('usericon', document.getElementById('usericon').value);
 
-  // Check if the username was successfully set
   if (localStorage.getItem('username')) {
       localStorage.setItem('state', '1');
-      window.location.href = 'index.html'; // Redirect to the index page
+      window.location.href = 'index.html';
   }
 }
 
 function deleteuser() {
-  localStorage.clear(); // Clear all localStorage data
+  localStorage.clear();
 }
 
 document.querySelector('button[type="submit"]').addEventListener('click', setuser);

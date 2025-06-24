@@ -1,70 +1,146 @@
-const GoogleAppScriptURL = 'https://script.google.com/macros/s/AKfycbw8CNhv4GkdZ3MILCw6UHshiP558uRghU1Vs6Op8zb-zOSQbEZndESL_WUzGh5Z5gOQ9Q/exec';
+const GoogleAppScriptURL = 'https://proxy-onareal.s-salmon.net';
+
+// キャッシュ用の変数
+let cachedPosts = null;
+let lastFetchTime = 0;
+const CACHE_DURATION = 30000; // 30秒間キャッシュ
 
 document.addEventListener('DOMContentLoaded', function() {
   const usr = localStorage.getItem('username');
   if(localStorage.getItem('state') !== '1'){
     window.location.href = 'setuser.html';
+    return;
   }
-  document.getElementById("main").insertAdjacentHTML('afterbegin', `Welcome, ${usr}!`);
+  load();
 });
 
+function escapeHtml(text) {
+  if (typeof text !== 'string') return text;
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 function load() {
-  // GET リクエスト
+  const now = Date.now();
+  
+  // キャッシュが有効な場合はキャッシュを使用
+  if (cachedPosts && (now - lastFetchTime) < CACHE_DURATION) {
+    displayPosts(cachedPosts);
+    return;
+  }
+  
   fetch(GoogleAppScriptURL)
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
   .then(data => {
-    let main = document.getElementById('main');
-    main.innerHTML = ""; // 既存のコンテンツをクリア
-
-    // ソート順を取得
-    sort = document.getElementById('sortselect').value;
-
-    switch (sort) {
-      case 'newest':
-        // 新しい順: 逆向きに
-        data.reverse();
-        break;
-      case 'oldest':
-        // 何もしない（元の順番）
-        break;
-      case 'popular':
-        // 人気な方を上に
-        data.sort((a, b) => parseInt(b.likes) - parseInt(a.likes));
-        break;
-      case 'random':
-        // ランダム順に並べ替え
-        for (let i = data.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [data[i], data[j]] = [data[j], data[i]]; // 要素を交換
-        }
-        break;
+    // 新しいレスポンス形式に対応: data.postsを参照
+    const posts = data.posts || data;
+    
+    if (!Array.isArray(posts)) {
+      throw new Error('Posts data is not an array');
     }
     
+    // キャッシュを更新
+    cachedPosts = posts;
+    lastFetchTime = now;
     
-    for (var i = 0; i < data.length; i++) {
-      main.insertAdjacentHTML('beforeend', `
-        <div class="post" id="post">
-          <div class="post_user">
-            <div class="post_user_icon">
-              <a href="#"><img src="${data[i].user_icon}" referrerpolicy="no-referrer" id="usericon"></a>
-            </div>          
-            <div class="post_user_name">
-              <a>${data[i].username}</a>
-            </div>
-          </div>
-          <div class="post_photo">
-            <img src="${data[i].image}" referrerpolicy="no-referrer">
-          </div>
-          <div class="post_captions">
-            <p>${data[i].caption}</p> <!-- 'captions' から 'caption' へ変更 -->
-          </div>
-        </div>
-      `);
-    }
+    displayPosts(posts);
   })
   .catch(error => {
     console.error('Error fetching data:', error);
     let main = document.getElementById('main');
-    main.innerHTML = "<p>Failed to get data.</p>";
+    
+    // 投稿表示用のコンテナを作成または取得
+    let postsContainer = document.getElementById('posts-container');
+    if (!postsContainer) {
+      postsContainer = document.createElement('div');
+      postsContainer.id = 'posts-container';
+      main.appendChild(postsContainer);
+    }
+    
+    postsContainer.innerHTML = "<p>データの取得に失敗しました。</p>";
   });
 }
+
+function displayPosts(posts) {
+  let main = document.getElementById('main');
+  
+  // デバッグ情報とWelcomeメッセージを保持
+  const debugInfo = document.getElementById('debug-info');
+  const welcomeMessage = main.querySelector('p');
+  
+  // 投稿表示用のコンテナを作成または取得
+  let postsContainer = document.getElementById('posts-container');
+  if (!postsContainer) {
+    postsContainer = document.createElement('div');
+    postsContainer.id = 'posts-container';
+    main.appendChild(postsContainer);
+  }
+  
+  // 既存の投稿をクリア
+  postsContainer.innerHTML = "";
+
+  const sort = document.getElementById('sortselect').value;
+
+  // データのコピーを作成してソート
+  let sortedPosts = [...posts];
+
+  switch (sort) {
+    case 'newest':
+      sortedPosts.reverse();
+      break;
+    case 'oldest':
+      // そのまま（既に古い順）
+      break;
+    case 'popular':
+      sortedPosts.sort((a, b) => parseInt(b.likes || 0) - parseInt(a.likes || 0));
+      break;
+    case 'random':
+      for (let i = sortedPosts.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [sortedPosts[i], sortedPosts[j]] = [sortedPosts[j], sortedPosts[i]];
+      }
+      break;
+  }
+  
+  // 一括でHTMLを構築
+  const postsHTML = sortedPosts.map(post => `
+    <div class="post" id="post">
+      <div class="post_user">
+        <div class="post_user_icon">
+          <a href="#"><img src="${post.user_icon || './images/usericon.png'}" referrerpolicy="no-referrer" id="usericon"></a>
+        </div>          
+        <div class="post_user_name">
+          <a>${escapeHtml(post.username || 'Anonymous')}</a>
+        </div>
+      </div>
+      <div class="post_photo">
+        <img src="${post.image || './images/dummy.png'}" referrerpolicy="no-referrer">
+      </div>
+      <div class="post_captions">
+        <p>${escapeHtml(post.caption || '')}</p>
+      </div>
+    </div>
+  `).join('');
+  
+  postsContainer.innerHTML = postsHTML;
+}
+
+// ソート変更時の処理を最適化
+document.addEventListener('DOMContentLoaded', function() {
+  const sortSelect = document.getElementById('sortselect');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', function() {
+      if (cachedPosts) {
+        displayPosts(cachedPosts);
+      } else {
+        load();
+      }
+    });
+  }
+});
