@@ -16,7 +16,7 @@ class GlobalNotificationManager {
     try {
         if ('serviceWorker' in navigator && 'PushManager' in window) {
             // サービスワーカー登録
-            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            const registration = await navigator.serviceWorker.register('/OnaReal/firebase-messaging-sw.js');
             
             // サービスワーカーがアクティブになるまで待機
             if (!registration.active) {
