@@ -5,7 +5,7 @@
       const unregisterPromises = registrations.map(reg => reg.unregister());
       Promise.all(unregisterPromises).then(function() {
         // firebase-messaging-sw.jsのみ再登録
-        navigator.serviceWorker.register('firebase-messaging-sw.js').catch(function(e){
+        navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(function(e){
           console.warn('Service Worker登録失敗:', e);
         });
       });
