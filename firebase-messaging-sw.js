@@ -43,8 +43,9 @@ messaging.onBackgroundMessage((payload) => {
 // 通知クリック時の処理
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
+    const url = event.notification.data && event.notification.data.url ? event.notification.data.url : (location.origin + '/OnaReal/upload.html');
     event.waitUntil(
-        clients.openWindow('/index.html')
+        clients.openWindow(url)
     );
 });
 
