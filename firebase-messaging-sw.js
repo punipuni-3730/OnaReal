@@ -48,22 +48,6 @@ self.addEventListener('notificationclick', (event) => {
     );
 });
 
-// PWAキャッシュ管理
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open('onareal-v1').then((cache) => {
-            return cache.addAll([
-                '/',
-                '/index.html',
-                '/sheet.css',
-                '/images/icon-192x192.png',
-                '/images/logo.png'
-            ]);
-        })
-    );
-    // 即座にアクティブ化
-    self.skipWaiting();
-});
 
 self.addEventListener('activate', (event) => {
     event.waitUntil(self.clients.claim());

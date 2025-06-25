@@ -190,25 +190,101 @@ function handleSaveFCMToken(sheet, data) {
   }
 }
 
+// ================= FCM HTTP v1 API 直接送信ユーティリティ =================
+// サービスアカウントJSONはGASのプロパティストア（ScriptProperties）に保存しておくこと
+// 例: PropertiesService.getScriptProperties().setProperty('SERVICE_ACCOUNT_JSON', '{...}')
+
+function getServiceAccount() {
+  return JSON.parse(PropertiesService.getScriptProperties().getProperty('SERVICE_ACCOUNT_JSON'));
+}
+
+function createJWT_(serviceAccount) {
+  const header = {
+    alg: 'RS256',
+    typ: 'JWT'
+  };
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    iss: serviceAccount.client_email,
+    scope: 'https://www.googleapis.com/auth/firebase.messaging',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600
+  };
+  const encode = obj => Utilities.base64EncodeWebSafe(JSON.stringify(obj)).replace(/=+$/, '');
+  const toSign = encode(header) + '.' + encode(payload);
+  const signature = Utilities.base64EncodeWebSafe(Utilities.computeRsaSha256Signature(toSign, serviceAccount.private_key)).replace(/=+$/, '');
+  return toSign + '.' + signature;
+}
+
+function getAccessToken_() {
+  const serviceAccount = getServiceAccount();
+  const jwt = createJWT_(serviceAccount);
+  const options = {
+    method: 'post',
+    contentType: 'application/x-www-form-urlencoded',
+    payload: {
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt
+    }
+  };
+  const response = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', options);
+  const result = JSON.parse(response.getContentText());
+  return result.access_token;
+}
+
+function sendFCMNotificationV1(token, title, body, imageUrl, tag, messageId) {
+  const serviceAccount = getServiceAccount();
+  const projectId = serviceAccount.project_id;
+  const url = 'https://fcm.googleapis.com/v1/projects/' + projectId + '/messages:send';
+  const accessToken = getAccessToken_();
+  const message = {
+    message: {
+      token: token,
+      notification: {
+        title: title,
+        body: body
+      },
+      data: {
+        imageUrl: imageUrl || '',
+        tag: tag || '',
+        messageId: messageId || ''
+      }
+    }
+  };
+  const options = {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      Authorization: 'Bearer ' + accessToken
+    },
+    payload: JSON.stringify(message),
+    muteHttpExceptions: true
+  };
+  const response = UrlFetchApp.fetch(url, options);
+  return JSON.parse(response.getContentText());
+}
+
 function handleSendGlobalNotification(data) {
   try {
-    const { title, body, imageUrl, timestamp } = data;
-    
-    // FCMトークンを取得
+    const { title, body, imageUrl, tag, messageId, timestamp } = data;
     const fcmSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('fcm_tokens');
     if (!fcmSheet) {
       throw new Error('FCMトークンシートが見つかりません');
     }
-    
     const tokens = fcmSheet.getDataRange().getValues().slice(1).map(row => row[2]);
-    
     if (tokens.length === 0) {
       throw new Error('FCMトークンが登録されていません');
     }
-    
-    // Cloudflare Worker経由でFCM通知を送信
-    const results = sendFCMNotificationViaWorker(tokens, title, body, imageUrl);
-    
+    // v1 APIで直接送信
+    const results = tokens.map(token => {
+      try {
+        const res = sendFCMNotificationV1(token, title, body, imageUrl, tag, messageId);
+        return { token, success: !res.error, messageId: res.name || messageId, error: res.error };
+      } catch (e) {
+        return { token, success: false, error: e.message };
+      }
+    });
     return ContentService
       .createTextOutput(JSON.stringify({ 
         success: true, 
@@ -216,7 +292,6 @@ function handleSendGlobalNotification(data) {
         results: results
       }))
       .setMimeType(ContentService.MimeType.JSON);
-      
   } catch (error) {
     console.error('Global notification error:', error);
     return ContentService
@@ -231,26 +306,24 @@ function handleSendGlobalNotification(data) {
 
 function handleSendUserNotification(data) {
   try {
-    const { userId, title, body, imageUrl, timestamp } = data;
-    
-    // 特定ユーザーのFCMトークンを取得
+    const { userId, title, body, imageUrl, tag, messageId, timestamp } = data;
     const fcmSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('fcm_tokens');
     if (!fcmSheet) {
       throw new Error('FCMトークンシートが見つかりません');
     }
-    
-    const data = fcmSheet.getDataRange().getValues();
-    const userTokens = data.slice(1)
-      .filter(row => row[1] === userId)
-      .map(row => row[2]);
-    
+    const dataRows = fcmSheet.getDataRange().getValues();
+    const userTokens = dataRows.slice(1).filter(row => row[1] === userId).map(row => row[2]);
     if (userTokens.length === 0) {
       throw new Error('ユーザーのFCMトークンが見つかりません');
     }
-    
-    // Cloudflare Worker経由でFCM通知を送信
-    const results = sendFCMNotificationViaWorker(userTokens, title, body, imageUrl);
-    
+    const results = userTokens.map(token => {
+      try {
+        const res = sendFCMNotificationV1(token, title, body, imageUrl, tag, messageId);
+        return { token, success: !res.error, messageId: res.name || messageId, error: res.error };
+      } catch (e) {
+        return { token, success: false, error: e.message };
+      }
+    });
     return ContentService
       .createTextOutput(JSON.stringify({ 
         success: true, 
@@ -258,7 +331,6 @@ function handleSendUserNotification(data) {
         results: results
       }))
       .setMimeType(ContentService.MimeType.JSON);
-      
   } catch (error) {
     console.error('User notification error:', error);
     return ContentService
@@ -270,43 +342,3 @@ function handleSendUserNotification(data) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 }
-
-// Cloudflare Worker経由でFCM通知を送信
-function sendFCMNotificationViaWorker(tokens, title, body, imageUrl) {
-  const results = [];
-  
-  tokens.forEach(token => {
-    try {
-      // Cloudflare WorkerにFCM通知送信リクエストを送信
-      const response = UrlFetchApp.fetch(`${CLOUDFLARE_WORKER_URL}/send-fcm`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        payload: JSON.stringify({
-          token: token,
-          title: title,
-          body: body,
-          imageUrl: imageUrl
-        })
-      });
-      
-      const result = JSON.parse(response.getContentText());
-      results.push({
-        token: token,
-        success: result.success,
-        messageId: result.messageId,
-        error: result.error
-      });
-      
-    } catch (error) {
-      results.push({
-        token: token,
-        success: false,
-        error: error.message
-      });
-    }
-  });
-  
-  return results;
-} 

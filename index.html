@@ -66,6 +66,21 @@
         const installBtn = document.getElementById('install-btn');
         let swRegistration = null;
         
+        // Service Worker競合防止: 既存SWを全てunregister
+        async function unregisterAllServiceWorkers() {
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const reg of registrations) {
+                    try {
+                        await reg.unregister();
+                        console.log('Service Worker unregistered:', reg);
+                    } catch (e) {
+                        console.warn('Service Worker unregister failed:', e);
+                    }
+                }
+            }
+        }
+
         // Service Worker登録
         async function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
@@ -335,6 +350,11 @@
             
             if ('Notification' in window) {
                 if (Notification.permission === 'denied') {
+                    // 拒否時はプロンプト表示
+                    showNotificationDeniedPrompt();
+                    updateDebugInfo('通知拒否: 設定から有効にしてください');
+                } else if (Notification.permission === 'default') {
+                    // 未許可時はプロンプト表示
                     const notificationPrompt = document.getElementById('notification-prompt');
                     if (notificationPrompt) {
                         notificationPrompt.style.display = 'block';
@@ -355,10 +375,6 @@
                         console.error('通知プロンプト要素が見つかりません');
                         updateDebugInfo('エラー: 通知プロンプト要素が見つかりません');
                     }
-                } else if (Notification.permission === 'denied') {
-                    console.log('通知が拒否されています。設定から有効にしてください。');
-                    showNotificationDeniedPrompt();
-                    updateDebugInfo('通知拒否: 設定から有効にしてください');
                 } else if (Notification.permission === 'granted') {
                     console.log('通知が許可されています');
                     updateDebugInfo('通知許可済み');
@@ -488,8 +504,9 @@
         }
         
         // 初期化
-        document.addEventListener('DOMContentLoaded', () => {
-            registerServiceWorker();
+        document.addEventListener('DOMContentLoaded', async () => {
+            await unregisterAllServiceWorkers(); // 競合防止
+            await registerServiceWorker();
             setupDevelopmentControls();
             checkAndRequestNotificationPermission();
         });
