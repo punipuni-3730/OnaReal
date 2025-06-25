@@ -45,21 +45,6 @@ class GlobalNotificationManager {
             this.handleForegroundNotification(payload);
           });
 
-          messaging.onTokenRefresh(() => {
-            messaging.getToken({
-              vapidKey: 'BOe0RKrpOJvi4kOcs0foUvKqzZQmPW3c9E8SZcMzYnQ3emZAR9PgPZceooIyZshLImnBPL0p58JhKmDJBKjnP3g',
-              serviceWorkerRegistration: registration
-            }).then((newToken) => {
-              if (newToken) {
-                this.notificationToken = newToken;
-                this.saveTokenToServer(newToken);
-                console.log('FCM Token refreshed:', newToken);
-              }
-            }).catch((error) => {
-              console.error('トークン更新エラー:', error);
-            });
-          });
-
           try {
             const token = await messaging.getToken({
               vapidKey: 'BOe0RKrpOJvi4kOcs0foUvKqzZQmPW3c9E8SZcMzYnQ3emZAR9PgPZceooIyZshLImnBPL0p58JhKmDJBKjnP3g',
