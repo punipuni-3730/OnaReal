@@ -1,104 +1,128 @@
-// 全世界のOnaRealユーザーに通知を送る機能
+// Firebase SDK のインポート（モジュール形式の場合、環境に応じて調整）
+import { initializeApp } from 'firebase/app';
+import { getMessaging, getToken, onMessage, onTokenRefresh } from 'firebase/messaging';
+
+// Firebase 設定（Firebase コンソールから取得）
+const firebaseConfig = {
+  apiKey: "AIzaSyAY6JbrW49cLXmzK3u3Xn4-slwyHE2nm9U",
+  authDomain: "onareal-38cad.firebaseapp.com",
+  projectId: "onareal-38cad",
+  storageBucket: "onareal-38cad.firebasestorage.app",
+  messagingSenderId: "602584094482",
+  appId: "1:602584094482:web:807792afcd1302770d05cb",
+  measurementId: "G-E4Q6DPEPBJ"
+};
+
+// Firebase 初期化
+const app = initializeApp(firebaseConfig);
+const messaging = getMessaging(app);
+
 class GlobalNotificationManager {
   constructor() {
     this.isInitialized = false;
     this.notificationToken = null;
     this.lastNotificationTime = 0;
-    this.notificationCooldown = 1000; // 1秒間のクールダウン
+    this.notificationCooldown = 1000;
     this.sentMessageIds = new Set();
-    this.maxStoredIds = 100; // 最大100個のIDを保存
+    this.maxStoredIds = 100;
   }
 
-  // 初期化
   async initialize() {
     if (this.isInitialized) return;
-    
     try {
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
-            // サービスワーカー登録
-            const registration = await navigator.serviceWorker.register('/OnaReal/firebase-messaging-sw.js');
-            
-            // サービスワーカーがアクティブになるまで待機
-            if (!registration.active) {
-                console.log('Waiting for Service Worker to activate...');
-                await new Promise((resolve) => {
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'activated') {
-                                console.log('Service Worker activated');
-                                resolve();
-                            }
-                        });
-                    });
-                });
-            } else {
-                console.log('Service Worker already active');
-            }
-            
-            if (typeof firebase !== 'undefined' && firebase.messaging) {
-                const messaging = firebase.messaging();
-                
-                // フォアグラウンド通知の処理
-                messaging.onMessage((payload) => {
-                    this.handleForegroundNotification(payload);
-                });
-                
-                // トークンの取得と保存
-                try {
-                    const token = await messaging.getToken({
-                        vapidKey: 'BOe0RKrpOJvi4kOcs0foUvKqzZQmPW3c9E8SZcMzYnQ3emZAR9PgPZceooIyZshLImnBPL0p58JhKmDJBKjnP3g',
-                        serviceWorkerRegistration: registration
-                    });
-                    if (token) {
-                        this.notificationToken = token;
-                        await this.saveTokenToServer(token);
-                        console.log('FCM Token obtained:', token);
-                    }
-                } catch (error) {
-                    console.error('通知トークンの取得に失敗:', error);
-                }
-            } else {
-                console.error('Firebase Messaging is not available');
-            }
-        } else {
-            console.warn('Service Worker or PushManager not supported');
-        }
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        // サービスワーカー登録
+        const registration = await navigator.serviceWorker.register('/OnaReal/firebase-messaging-sw.js');
         
-        this.isInitialized = true;
-    } catch (error) {
-        console.error('グローバル通知の初期化に失敗:', error);
-    }
-}
+        // サービスワーカーがアクティブになるまで待機
+        if (!registration.active) {
+          console.log('Waiting for Service Worker to activate...');
+          await new Promise((resolve) => {
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'activated') {
+                  console.log('Service Worker activated');
+                  resolve();
+                }
+              });
+            });
+          });
+        } else {
+          console.log('Service Worker already active');
+        }
 
-  // フォアグラウンド通知の処理
+        // 通知許可をリクエスト
+        if (Notification.permission !== 'granted') {
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') {
+            console.warn('通知許可が拒否されました');
+            return;
+          }
+        }
+
+        // フォアグラウンド通知の処理
+        onMessage(messaging, (payload) => {
+          this.handleForegroundNotification(payload);
+        });
+
+        // トークン更新の検知
+        onTokenRefresh(messaging, () => {
+          getToken(messaging, {
+            vapidKey: 'BOe0RKrpOJvi4kOcs0foUvKqzZQmPW3c9E8SZcMzYnQ3emZAR9PgPZceooIyZshLImnBPL0p58JhKmDJBKjnP3g',
+            serviceWorkerRegistration: registration
+          }).then((newToken) => {
+            if (newToken) {
+              this.notificationToken = newToken;
+              this.saveTokenToServer(newToken);
+              console.log('FCM Token refreshed:', newToken);
+            }
+          }).catch((error) => {
+            console.error('トークン更新エラー:', error);
+          });
+        });
+
+        // トークンの取得と保存
+        try {
+          const token = await getToken(messaging, {
+            vapidKey: 'BOe0RKrpOJvi4kOcs0foUvKqzZQmPW3c9E8SZcMzYnQ3emZAR9PgPZceooIyZshLImnBPL0p58JhKmDJBKjnP3g',
+            serviceWorkerRegistration: registration
+          });
+          if (token) {
+            this.notificationToken = token;
+            await this.saveTokenToServer(token);
+            console.log('FCM Token obtained:', token);
+          }
+        } catch (error) {
+          console.error('通知トークンの取得に失敗:', error);
+        }
+      } else {
+        console.warn('Service Worker or PushManager not supported');
+      }
+      this.isInitialized = true;
+    } catch (error) {
+      console.error('グローバル通知の初期化に失敗:', error);
+    }
+  }
+
   handleForegroundNotification(payload) {
-    // 通知のtagとmessageIdで重複防止
     const tag = payload.notification?.tag || payload.data?.tag || 'onareal-global';
     const messageId = payload.data?.messageId || payload.messageId || tag;
 
-    // 重複チェック
-    if (this.sentMessageIds.has(messageId)) {
-      return;
-    }
+    if (this.sentMessageIds.has(messageId)) return;
 
-    // クールダウンチェック
     const now = Date.now();
-    if (now - this.lastNotificationTime < this.notificationCooldown) {
-      return;
-    }
+    if (now - this.lastNotificationTime < this.notificationCooldown) return;
 
     this.lastNotificationTime = now;
     this.sentMessageIds.add(messageId);
 
-    // 古いIDを削除（メモリリーク防止）
     if (this.sentMessageIds.size > this.maxStoredIds) {
       const idsArray = Array.from(this.sentMessageIds);
       this.sentMessageIds.clear();
       idsArray.slice(-this.maxStoredIds).forEach(id => this.sentMessageIds.add(id));
     }
 
-    // 通知の表示
     if ('Notification' in window && Notification.permission === 'granted') {
       const notification = new Notification(payload.notification?.title || 'OnaReal', {
         body: payload.notification?.body || payload.data?.body || '新しい通知があります',
@@ -118,54 +142,46 @@ class GlobalNotificationManager {
     }
   }
 
-  // バックグラウンド通知の処理
   handleBackgroundNotification(payload) {
-    // バックグラウンドでは自動的に通知が表示される
-    // 追加の処理が必要な場合はここに記述
+    // バックグラウンド通知の追加処理（必要に応じて）
   }
 
-  // トークンをサーバーに保存
   async saveTokenToServer(token) {
     try {
+      const userId = /* 認証システムから取得、例：firebase.auth().currentUser?.uid */ '';
       const response = await fetch('https://proxy-onareal.s-salmon.net/fcm-token', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'saveNotificationToken',
-          token: token,
-          timestamp: Date.now()
+          action: 'saveFCMToken', // サーバー側のアクション名と一致
+          token,
+          userId: userId || '',
+          timestamp: new Date().toISOString()
         })
       });
-      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      console.log('トークン保存成功:', token);
     } catch (error) {
       console.warn('通知トークンの保存に失敗:', error);
     }
   }
 
-  // グローバル通知を送信
   async sendGlobalNotification(message, title = 'OnaReal') {
     try {
-      const response = await fetch('https://proxy-onareal.s-salmon.net/send-notification', {
+      const response = await fetch('https://proxy-onareal.s-salmon.net/send-global-notification', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: title,
+          title,
           body: message,
-          timestamp: Date.now()
+          timestamp: new Date().toISOString()
         })
       });
-      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
       const result = await response.json();
       return result;
     } catch (error) {
@@ -174,7 +190,6 @@ class GlobalNotificationManager {
     }
   }
 
-  // テスト通知を送信
   async sendTestNotification() {
     try {
       const result = await this.sendGlobalNotification('これはテスト通知です。', 'テスト通知');
@@ -185,36 +200,22 @@ class GlobalNotificationManager {
     }
   }
 
-  // 管理者用：全ユーザーに通知を送信
   async sendGlobalNotificationToAll(title, body, imageUrl = null) {
     try {
-      console.log('グローバル通知送信開始:', { title, body, imageUrl });
-      
-      // パラメータの検証
       if (!title || !body) {
         console.error('通知のタイトルまたは本文が空です');
         return false;
       }
-      
-      const requestBody = {
-        title: title,
-        body: body,
-        imageUrl: imageUrl,
-        timestamp: new Date().toISOString()
-      };
-      
-      console.log('送信するデータ:', requestBody);
-      
       const response = await fetch('https://proxy-onareal.s-salmon.net/send-global-notification', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          body,
+          imageUrl,
+          timestamp: new Date().toISOString()
+        })
       });
-      
-      console.log('通知送信レスポンス:', response.status, response.statusText);
-      
       if (response.ok) {
         const result = await response.json();
         console.log('グローバル通知送信成功:', result);
@@ -225,29 +226,25 @@ class GlobalNotificationManager {
         return false;
       }
     } catch (error) {
-      console.error('グローバル通知送信エラー（詳細）:', error);
-      console.error('エラースタック:', error.stack);
+      console.error('グローバル通知送信エラー:', error);
       return false;
     }
   }
 
-  // 管理者用：特定のユーザーに通知を送信
   async sendUserNotification(userId, title, body, imageUrl = null) {
     try {
+      if (!userId) throw new Error('userIdが必要です');
       const response = await fetch('https://proxy-onareal.s-salmon.net/send-user-notification', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: userId,
-          title: title,
-          body: body,
-          imageUrl: imageUrl,
+          userId,
+          title,
+          body,
+          imageUrl,
           timestamp: new Date().toISOString()
         })
       });
-      
       if (response.ok) {
         console.log(`ユーザー ${userId} に通知を送信しました`);
         return true;
@@ -262,25 +259,20 @@ class GlobalNotificationManager {
   }
 }
 
-// グローバルインスタンスを作成
 const globalNotificationManager = new GlobalNotificationManager();
-
-// windowオブジェクトに公開（PWAインストール後の通知許可要求で使用）
 window.globalNotificationManager = globalNotificationManager;
 
-// FCMトークン取得用のグローバル関数を追加
 window.getFCMToken = async function() {
-  if (window.globalNotificationManager && typeof window.globalNotificationManager.initialize === 'function') {
-    // initialize()はトークン取得も行うので、再実行でOK
-    await window.globalNotificationManager.initialize();
-    if (window.globalNotificationManager.notificationToken) {
-      console.log('FCMトークン:', window.globalNotificationManager.notificationToken);
-      return window.globalNotificationManager.notificationToken;
+  try {
+    await globalNotificationManager.initialize();
+    if (globalNotificationManager.notificationToken) {
+      console.log('FCMトークン:', globalNotificationManager.notificationToken);
+      return globalNotificationManager.notificationToken;
     } else {
       alert('FCMトークンの取得に失敗しました。通知設定やネットワークをご確認ください。');
       return null;
     }
-  } else {
+  } catch (error) {
     alert('通知機能が利用できません。');
     return null;
   }
