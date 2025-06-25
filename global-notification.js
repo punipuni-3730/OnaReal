@@ -1,22 +1,3 @@
-// Firebase SDK のインポート（モジュール形式の場合、環境に応じて調整）
-import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken, onMessage, onTokenRefresh } from 'firebase/messaging';
-
-// Firebase 設定（Firebase コンソールから取得）
-const firebaseConfig = {
-  apiKey: "AIzaSyAY6JbrW49cLXmzK3u3Xn4-slwyHE2nm9U",
-  authDomain: "onareal-38cad.firebaseapp.com",
-  projectId: "onareal-38cad",
-  storageBucket: "onareal-38cad.firebasestorage.app",
-  messagingSenderId: "602584094482",
-  appId: "1:602584094482:web:807792afcd1302770d05cb",
-  measurementId: "G-E4Q6DPEPBJ"
-};
-
-// Firebase 初期化
-const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
-
 class GlobalNotificationManager {
   constructor() {
     this.isInitialized = false;
@@ -31,10 +12,7 @@ class GlobalNotificationManager {
     if (this.isInitialized) return;
     try {
       if ('serviceWorker' in navigator && 'PushManager' in window) {
-        // サービスワーカー登録
         const registration = await navigator.serviceWorker.register('/OnaReal/firebase-messaging-sw.js');
-        
-        // サービスワーカーがアクティブになるまで待機
         if (!registration.active) {
           console.log('Waiting for Service Worker to activate...');
           await new Promise((resolve) => {
@@ -52,49 +30,51 @@ class GlobalNotificationManager {
           console.log('Service Worker already active');
         }
 
-        // 通知許可をリクエスト
-        if (Notification.permission !== 'granted') {
-          const permission = await Notification.requestPermission();
-          if (permission !== 'granted') {
-            console.warn('通知許可が拒否されました');
-            return;
-          }
-        }
+        if (typeof firebase !== 'undefined' && firebase.messaging) {
+          const messaging = firebase.messaging();
 
-        // フォアグラウンド通知の処理
-        onMessage(messaging, (payload) => {
-          this.handleForegroundNotification(payload);
-        });
-
-        // トークン更新の検知
-        onTokenRefresh(messaging, () => {
-          getToken(messaging, {
-            vapidKey: 'BOe0RKrpOJvi4kOcs0foUvKqzZQmPW3c9E8SZcMzYnQ3emZAR9PgPZceooIyZshLImnBPL0p58JhKmDJBKjnP3g',
-            serviceWorkerRegistration: registration
-          }).then((newToken) => {
-            if (newToken) {
-              this.notificationToken = newToken;
-              this.saveTokenToServer(newToken);
-              console.log('FCM Token refreshed:', newToken);
+          if (Notification.permission !== 'granted') {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+              console.warn('通知許可が拒否されました');
+              return;
             }
-          }).catch((error) => {
-            console.error('トークン更新エラー:', error);
-          });
-        });
-
-        // トークンの取得と保存
-        try {
-          const token = await getToken(messaging, {
-            vapidKey: 'BOe0RKrpOJvi4kOcs0foUvKqzZQmPW3c9E8SZcMzYnQ3emZAR9PgPZceooIyZshLImnBPL0p58JhKmDJBKjnP3g',
-            serviceWorkerRegistration: registration
-          });
-          if (token) {
-            this.notificationToken = token;
-            await this.saveTokenToServer(token);
-            console.log('FCM Token obtained:', token);
           }
-        } catch (error) {
-          console.error('通知トークンの取得に失敗:', error);
+
+          messaging.onMessage((payload) => {
+            this.handleForegroundNotification(payload);
+          });
+
+          messaging.onTokenRefresh(() => {
+            messaging.getToken({
+              vapidKey: 'BOe0RKrpOJvi4kOcs0foUvKqzZQmPW3c9E8SZcMzYnQ3emZAR9PgPZceooIyZshLImnBPL0p58JhKmDJBKjnP3g',
+              serviceWorkerRegistration: registration
+            }).then((newToken) => {
+              if (newToken) {
+                this.notificationToken = newToken;
+                this.saveTokenToServer(newToken);
+                console.log('FCM Token refreshed:', newToken);
+              }
+            }).catch((error) => {
+              console.error('トークン更新エラー:', error);
+            });
+          });
+
+          try {
+            const token = await messaging.getToken({
+              vapidKey: 'BOe0RKrpOJvi4kOcs0foUvKqzZQmPW3c9E8SZcMzYnQ3emZAR9PgPZceooIyZshLImnBPL0p58JhKmDJBKjnP3g',
+              serviceWorkerRegistration: registration
+            });
+            if (token) {
+              this.notificationToken = token;
+              await this.saveTokenToServer(token);
+              console.log('FCM Token obtained:', token);
+            }
+          } catch (error) {
+            console.error('通知トークンの取得に失敗:', error);
+          }
+        } else {
+          console.error('Firebase Messaging is not available');
         }
       } else {
         console.warn('Service Worker or PushManager not supported');
@@ -143,17 +123,17 @@ class GlobalNotificationManager {
   }
 
   handleBackgroundNotification(payload) {
-    // バックグラウンド通知の追加処理（必要に応じて）
+    // バックグラウンド通知の追加処理
   }
 
   async saveTokenToServer(token) {
     try {
-      const userId = /* 認証システムから取得、例：firebase.auth().currentUser?.uid */ '';
+      const userId = ''; // ユーザー通知が必要な場合、認証システムから取得
       const response = await fetch('https://proxy-onareal.s-salmon.net/fcm-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'saveFCMToken', // サーバー側のアクション名と一致
+          action: 'saveFCMToken',
           token,
           userId: userId || '',
           timestamp: new Date().toISOString()
