@@ -89,6 +89,8 @@ document.getElementById('image-upload').addEventListener('change', function(even
               const id = response.url.match(/[-\w]{25,}/)[0];
               document.getElementById('usericon').value = `https://lh3.googleusercontent.com/d/${id}`;
               alert('Upload successful!');
+              // 画像アップロード成功時に自動で登録ボタンを押す
+              document.getElementById('register-btn').click();
             } else {
               alert('Upload failed: Please try again.');
             }

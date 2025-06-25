@@ -89,10 +89,17 @@ function doPost(e) {
 
 function handleUpload(sheet, data) {
   try {
-    const { filename, file, username, caption, timestamp } = data;
-    const newRow = [timestamp, username, caption, filename, file];
+    const { username, usericon, title, caption, image, ip, timestamp } = data;
+    const newRow = [
+      username || '',
+      usericon || '',
+      title || '',
+      caption || '',
+      image || '',
+      ip || '',
+      timestamp || new Date().toISOString()
+    ];
     sheet.appendRow(newRow);
-    
     return ContentService
       .createTextOutput(JSON.stringify({ 
         success: true, 
@@ -114,19 +121,30 @@ function handleUpload(sheet, data) {
 function handleDelete(sheet, data) {
   try {
     const { rowNumber, password, username, caption } = data;
-    const correctPassword = 'admin123'; // 本番では安全な認証を使用
+    // TODO: 本番ではパスワードを削除し、Firebase Authentication や JWT を使用
+    const correctPassword = 'Salmon3730'; // 開発用一時パスワード
     if (password !== correctPassword) throw new Error('パスワードが正しくありません');
-    
-    if (rowNumber && rowNumber > 1) {
+
+    if (rowNumber) {
+      // rowNumber の検証
+      if (!Number.isInteger(Number(rowNumber)) || rowNumber <= 1 || rowNumber > sheet.getLastRow()) {
+        throw new Error('無効な行番号です');
+      }
       sheet.deleteRow(rowNumber);
-    } else {
+    } else if (username && caption) {
       const data = sheet.getDataRange().getValues();
+      let found = false;
       for (let i = data.length - 1; i >= 1; i--) {
-        if (data[i][1] === username && data[i][2] === caption) {
+        // 列順: username (0), user_icon (1), title (2), caption (3), image (4), ip (5), timestamp (6)
+        if (data[i][0] === username && data[i][3] === caption) {
           sheet.deleteRow(i + 1);
+          found = true;
           break;
         }
       }
+      if (!found) throw new Error('指定された username と caption の投稿が見つかりません');
+    } else {
+      throw new Error('rowNumber または username と caption のいずれかを指定してください');
     }
     
     return ContentService

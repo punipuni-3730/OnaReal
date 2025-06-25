@@ -214,4 +214,4 @@ if ('serviceWorker' in navigator) {
 // グローバル関数として公開
 window.sendBeRealNotification = () => notificationManager.sendBeRealNotification();
 window.sendCustomNotification = (title, message) => notificationManager.sendCustomNotification(title, message);
-window.scheduleNotificationAfter = (minutes) => notificationManager.scheduleNotificationAfter(minutes); 
+window.scheduleNotificationAfter = (minutes) => notificationManager.scheduleNotificationAfter(minutes);

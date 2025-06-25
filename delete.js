@@ -15,8 +15,9 @@ function loadPosts() {
   fetch(GoogleAppScriptURL)
   .then(response => response.json())
   .then(data => {
-    postsData = data;
-    displayPosts(data);
+    const posts = data.posts || data; // index.htmlと同じ方式で配列を抽出
+    postsData = posts;
+    displayPosts(posts);
   })
   .catch(error => {
     console.error('Error fetching posts:', error);
@@ -87,6 +88,7 @@ function confirmDelete() {
 
   const post = postsData[currentDeleteIndex];
   const deleteData = {
+    action: 'delete',
     rowNumber: currentDeleteIndex + 2,
     password: password,
     username: post.username,
@@ -127,4 +129,4 @@ document.addEventListener('DOMContentLoaded', function() {
     window.location.href = 'setuser.html';
   }
   loadPosts();
-}); 
+});

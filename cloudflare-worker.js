@@ -218,32 +218,14 @@ async function handleDefault(request) {
     const gasData = await gasResponse.text()
     console.log('GAS default response length:', gasData.length)
 
-    // GASからのレスポンスが空でも必ず { success: true } を返す
-    let json;
-    try {
-      json = JSON.parse(gasData);
-    } catch (e) {
-      json = null;
-    }
-    if (json && typeof json === 'object') {
-      return new Response(gasData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type'
-        }
-      });
-    } else {
-      return new Response(JSON.stringify({ success: true }), {
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type'
-        }
-      });
-    }
+    return new Response(gasData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      }
+    })
   } catch (error) {
     console.error('Default error:', error)
     return new Response(JSON.stringify({ 
@@ -460,4 +442,4 @@ async function handleSendUserNotification(request) {
       }
     })
   }
-}
+} 
