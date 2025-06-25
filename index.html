@@ -71,7 +71,7 @@
             if ('serviceWorker' in navigator) {
                 try {
                     const options = { updateViaCache: 'none' };
-                    swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', options);
+                    swRegistration = await navigator.serviceWorker.register('firebase-messaging-sw.js', options);
                     console.log('Service Worker registered:', swRegistration);
                     updateDebugInfo('Service Worker登録成功');
                     
