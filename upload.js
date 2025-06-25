@@ -193,6 +193,7 @@ function upload(event) {
 
   function sendData(ip) {
     const formData = {
+      action: 'upload', // ←追加
       username: sanitizeInput(localStorage.getItem('username')),
       usericon: sanitizeInput(localStorage.getItem('usericon')),
       title: "none",
