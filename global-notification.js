@@ -122,9 +122,7 @@ class GlobalNotificationManager {
     }
   }
 
-  handleBackgroundNotification(payload) {
-    // バックグラウンド通知の追加処理
-  }
+  handleBackgroundNotification(payload) {}
 
   async saveTokenToServer(token) {
     try {
@@ -139,12 +137,13 @@ class GlobalNotificationManager {
           timestamp: new Date().toISOString()
         })
       });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(`トークン保存失敗: ${result.error || response.status}`);
       }
       console.log('トークン保存成功:', token);
     } catch (error) {
-      console.warn('通知トークンの保存に失敗:', error);
+      console.error('通知トークンの保存に失敗:', error);
     }
   }
 
@@ -159,10 +158,10 @@ class GlobalNotificationManager {
           timestamp: new Date().toISOString()
         })
       });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
       const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(`通知送信失敗: ${result.error || response.status}`);
+      }
       return result;
     } catch (error) {
       console.error('グローバル通知の送信に失敗:', error);
@@ -173,6 +172,7 @@ class GlobalNotificationManager {
   async sendTestNotification() {
     try {
       const result = await this.sendGlobalNotification('これはテスト通知です。', 'テスト通知');
+      console.log('テスト通知送信成功:', result);
       return result;
     } catch (error) {
       console.error('テスト通知の送信に失敗:', error);
@@ -196,13 +196,12 @@ class GlobalNotificationManager {
           timestamp: new Date().toISOString()
         })
       });
-      if (response.ok) {
-        const result = await response.json();
+      const result = await response.json();
+      if (response.ok && result.success) {
         console.log('グローバル通知送信成功:', result);
         return true;
       } else {
-        const errorText = await response.text();
-        console.error('グローバル通知送信エラー:', response.status, errorText);
+        console.error('グローバル通知送信エラー:', result.error || response.status);
         return false;
       }
     } catch (error) {
@@ -225,11 +224,12 @@ class GlobalNotificationManager {
           timestamp: new Date().toISOString()
         })
       });
-      if (response.ok) {
+      const result = await response.json();
+      if (response.ok && result.success) {
         console.log(`ユーザー ${userId} に通知を送信しました`);
         return true;
       } else {
-        console.error('ユーザー通知送信エラー');
+        console.error('ユーザー通知送信エラー:', result.error || response.status);
         return false;
       }
     } catch (error) {
@@ -253,6 +253,7 @@ window.getFCMToken = async function() {
       return null;
     }
   } catch (error) {
+    console.error('通知機能が利用できません:', error);
     alert('通知機能が利用できません。');
     return null;
   }
