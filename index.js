@@ -34,5 +34,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   } else {
     window.location.href = 'setuser.html';
-  }    
+  }
+  load();
 });
